@@ -1,0 +1,20 @@
+{
+  "product_id": "P001",
+  "name": "Audifonos Bluetooth X10",
+  "category": "Electronics",
+  "price": 129900,
+  "currency": "COP",
+  "stock_status": "in_stock",
+  "min_shipping_days": 2,
+  "max_shipping_days": 5,
+  "short_description": "Audifonos inalambricos con cancelacion de ruido",
+  "full_description": "Audifonos bluetooth con tecnologia 5.3, cancelacion de ruido, autonomia de bateria de hasta 20 horas y estuche de carga portatil.",
+  "brand": "TechSound",
+  "shipping_cost": 12000,
+  "shipping_regions": "Bogotá, Medellín, Cali",
+  "returns_policy": "Devolución en 5 días si el producto está sin uso",
+  "warranty_policy": "Garantía de 30 días por defectos de fábrica",
+  "specs": "Bluetooth 5.3, batería 20h, color negro",
+  "variants": "Negro, Blanco",
+  "source": "Proveedor Principal"
+}
