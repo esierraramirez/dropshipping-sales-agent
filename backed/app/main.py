@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app.core.config import settings
 from app.api.router import api_router
+from app.infrastructure.db.session import Base, engine
+from app.models.vendor import Vendor
+from app.models.product import Product
 
 app = FastAPI(title=settings.APP_NAME)
 
@@ -15,3 +17,8 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+
+
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
