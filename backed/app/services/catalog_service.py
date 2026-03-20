@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.models.vendor import Vendor
 from app.models.product import Product
 from app.rag.documents import product_to_document
-from app.rag.indexer import save_knowledge_base_jsonl, build_basic_keyword_index
+from app.rag.inderex import save_knowledge_base_jsonl, build_basic_keyword_index
 import shutil
 import json
 import re
