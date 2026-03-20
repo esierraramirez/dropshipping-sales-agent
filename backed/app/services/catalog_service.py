@@ -1,9 +1,11 @@
 from pathlib import Path
 from datetime import datetime
+from fastapi import UploadFile, HTTPException
+from sqlalchemy.orm import Session
+from app.models.vendor import Vendor
+from app.models.product import Product
 import shutil
 import re
-
-from fastapi import UploadFile, HTTPException
 
 from app.infrastructure.excel.importer import (
     read_excel_file,
@@ -130,4 +132,91 @@ def normalize_catalog_for_vendor(vendor_name: str) -> dict:
         "valid_rows": int(quality_report["valid_rows"]),
         "invalid_rows": int(quality_report["invalid_rows"]),
         "preview_rows": preview_rows,
+    }
+    
+def get_or_create_vendor(db: Session, vendor_name: str) -> Vendor:
+    vendor_slug = slugify(vendor_name)
+
+    vendor = db.query(Vendor).filter(Vendor.slug == vendor_slug).first()
+    if vendor:
+        return vendor
+
+    vendor = Vendor(name=vendor_name, slug=vendor_slug)
+    db.add(vendor)
+    db.commit()
+    db.refresh(vendor)
+    return vendor
+
+
+def save_normalized_catalog_to_db(db: Session, vendor_name: str) -> dict:
+    vendor = get_or_create_vendor(db, vendor_name)
+
+    vendor_slug = slugify(vendor_name)
+    processed_file = Path(PROCESSED_DATA_PATH) / vendor_slug / "catalog_normalized.csv"
+
+    if not processed_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="No existe catálogo normalizado para este vendedor. Primero debes ejecutar /catalog/normalize"
+        )
+
+    df = read_excel_file(str(processed_file)) if processed_file.suffix == ".xlsx" else None
+    if df is None:
+        import pandas as pd
+        df = pd.read_csv(processed_file)
+
+    # Limpiar productos previos del vendedor para reemplazar el catálogo actual
+    db.query(Product).filter(Product.vendor_id == vendor.id).delete()
+    db.commit()
+
+    inserted = 0
+
+    for _, row in df.iterrows():
+        product = Product(
+            vendor_id=vendor.id,
+            product_id=str(row.get("product_id", "")).strip(),
+            name=str(row.get("name", "")).strip(),
+            category=str(row.get("category", "")).strip(),
+            price=float(row.get("price", 0)),
+            currency=str(row.get("currency", "COP")).strip(),
+            stock_status=str(row.get("stock_status", "out_of_stock")).strip(),
+            min_shipping_days=int(row.get("min_shipping_days", 0)),
+            max_shipping_days=int(row.get("max_shipping_days", 0)),
+            short_description=row.get("short_description"),
+            full_description=row.get("full_description"),
+            brand=row.get("brand"),
+            shipping_cost=float(row["shipping_cost"]) if row.get("shipping_cost") not in [None, ""] else None,
+            shipping_regions=row.get("shipping_regions"),
+            returns_policy=row.get("returns_policy"),
+            warranty_policy=row.get("warranty_policy"),
+            specs=row.get("specs"),
+            variants=row.get("variants"),
+            source=row.get("source"),
+        )
+        db.add(product)
+        inserted += 1
+
+    db.commit()
+
+    return {
+        "message": "Catálogo almacenado en base de datos correctamente.",
+        "vendor_id": vendor.id,
+        "vendor_name": vendor.name,
+        "inserted_products": inserted
+    }
+
+
+def list_products_by_vendor(db: Session, vendor_name: str) -> dict:
+    vendor_slug = slugify(vendor_name)
+
+    vendor = db.query(Vendor).filter(Vendor.slug == vendor_slug).first()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendedor no encontrado.")
+
+    products = db.query(Product).filter(Product.vendor_id == vendor.id).order_by(Product.name.asc()).all()
+
+    return {
+        "vendor_name": vendor.name,
+        "total_products": len(products),
+        "products": products
     }
