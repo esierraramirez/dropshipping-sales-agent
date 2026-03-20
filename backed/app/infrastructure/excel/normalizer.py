@@ -9,20 +9,143 @@ import pandas as pd
 
 
 CATEGORY_MAP = {
+    # Electronics & Technology
     "electronics": "Electronics",
     "electronica": "Electronics",
     "tecnologia": "Electronics",
+    "tech": "Electronics",
+    "computadores": "Electronics",
+    "computers": "Electronics",
+    "smartphones": "Electronics",
+    "telefonos": "Electronics",
+    "accesorios tecnologia": "Electronics",
+    "gadgets": "Electronics",
     "audio": "Electronics",
-    "hogar": "Home",
-    "home": "Home",
-    "cocina": "Home",
+    "camara": "Electronics",
+    "cameras": "Electronics",
+    
+    # Fashion & Clothing
     "fashion": "Fashion",
     "moda": "Fashion",
     "ropa": "Fashion",
+    "clothing": "Fashion",
+    "zapatos": "Fashion",
+    "shoes": "Fashion",
+    "bolsas": "Fashion",
+    "bags": "Fashion",
+    "accesorios moda": "Fashion",
+    "joyas": "Fashion",
+    "jewelry": "Fashion",
+    
+    # Home & Kitchen
+    "hogar": "Home",
+    "home": "Home",
+    "cocina": "Home",
+    "kitchen": "Home",
+    "muebles": "Home",
+    "furniture": "Home",
+    "decoracion": "Home",
+    "decoration": "Home",
+    "bedding": "Home",
+    "ropa cama": "Home",
+    
+    # Sports & Outdoor
     "sports": "Sports",
     "deportes": "Sports",
+    "outdoor": "Sports",
+    "exterior": "Sports",
+    "gym": "Sports",
+    "fitness": "Sports",
+    "camping": "Sports",
+    "bicicleta": "Sports",
+    "bicycles": "Sports",
+    
+    # Beauty & Personal Care
+    "belleza": "Beauty",
+    "beauty": "Beauty",
+    "cosmeticos": "Beauty",
+    "cosmetics": "Beauty",
+    "skincare": "Beauty",
+    "cuidado piel": "Beauty",
+    "perfume": "Beauty",
+    "fragrances": "Beauty",
+    "hair": "Beauty",
+    "cabello": "Beauty",
+    
+    # Health & Wellness
     "health": "Health",
     "salud": "Health",
+    "wellness": "Health",
+    "bienestar": "Health",
+    "suplementos": "Health",
+    "supplements": "Health",
+    "vitaminas": "Health",
+    "vitamins": "Health",
+    
+    # Books & Education
+    "libros": "Books",
+    "books": "Books",
+    "educacion": "Books",
+    "education": "Books",
+    "ebooks": "Books",
+    "cursos": "Books",
+    "courses": "Books",
+    
+    # Toys & Games
+    "juguetes": "Toys",
+    "toys": "Toys",
+    "juegos": "Toys",
+    "games": "Toys",
+    "puzzles": "Toys",
+    "lego": "Toys",
+    
+    # Pet Supplies
+    "mascotas": "Pets",
+    "pets": "Pets",
+    "perros": "Pets",
+    "gatos": "Pets",
+    "accesorios mascotas": "Pets",
+    "alimento mascota": "Pets",
+    
+    # Garden & Outdoor
+    "jardin": "Garden",
+    "garden": "Garden",
+    "plantas": "Garden",
+    "herramientas": "Garden",
+    "tools": "Garden",
+    
+    # Office & Stationery
+    "oficina": "Office",
+    "office": "Office",
+    "papeleria": "Office",
+    "stationery": "Office",
+    "escritorio": "Office",
+    
+    # Travel & Luggage
+    "viajes": "Travel",
+    "travel": "Travel",
+    "maletas": "Travel",
+    "luggage": "Travel",
+    "mochilas": "Travel",
+    "backpacks": "Travel",
+    
+    # Automotive
+    "auto": "Automotive",
+    "automotive": "Automotive",
+    "carro": "Automotive",
+    "accesorios carro": "Automotive",
+    "car accessories": "Automotive",
+    
+    # Handmade & Crafts
+    "artesania": "Handmade",
+    "handmade": "Handmade",
+    "manualidades": "Handmade",
+    "crafts": "Handmade",
+    
+    # Default
+    "general": "General",
+    "otro": "General",
+    "other": "General",
 }
 
 
@@ -142,6 +265,10 @@ def normalize_dataframe(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Any]]
                 "short_description": normalize_optional_text(row.get("short_description")),
                 "full_description": normalize_optional_text(row.get("full_description")),
                 "brand": normalize_optional_text(row.get("brand")),
+                "size": normalize_optional_text(row.get("size")),
+                "colors": normalize_optional_text(row.get("colors")),
+                "launch_year": normalize_int(row.get("launch_year")) if not pd.isna(row.get("launch_year")) else None,
+                "sku": normalize_optional_text(row.get("sku")),
                 "shipping_cost": normalize_price(row.get("shipping_cost")) if not pd.isna(row.get("shipping_cost")) else None,
                 "shipping_regions": normalize_optional_text(row.get("shipping_regions")),
                 "returns_policy": normalize_optional_text(row.get("returns_policy")),
