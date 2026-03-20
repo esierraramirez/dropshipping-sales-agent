@@ -4,7 +4,10 @@ from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from app.models.vendor import Vendor
 from app.models.product import Product
+from app.rag.documents import product_to_document
+from app.rag.indexer import save_knowledge_base_jsonl, build_basic_keyword_index
 import shutil
+import json
 import re
 
 from app.infrastructure.excel.importer import (
@@ -219,4 +222,85 @@ def list_products_by_vendor(db: Session, vendor_name: str) -> dict:
         "vendor_name": vendor.name,
         "total_products": len(products),
         "products": products
+    }
+
+def build_knowledge_base_for_vendor(db: Session, vendor_name: str) -> dict:
+    vendor_slug = slugify(vendor_name)
+
+    vendor = db.query(Vendor).filter(Vendor.slug == vendor_slug).first()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendedor no encontrado.")
+
+    products = db.query(Product).filter(Product.vendor_id == vendor.id).all()
+    if not products:
+        raise HTTPException(status_code=404, detail="No hay productos cargados para este vendedor.")
+
+    documents = []
+    for product in products:
+        product_dict = {
+            "vendor_id": product.vendor_id,
+            "product_id": product.product_id,
+            "name": product.name,
+            "category": product.category,
+            "price": product.price,
+            "currency": product.currency,
+            "stock_status": product.stock_status,
+            "min_shipping_days": product.min_shipping_days,
+            "max_shipping_days": product.max_shipping_days,
+            "short_description": product.short_description,
+            "full_description": product.full_description,
+            "brand": product.brand,
+            "shipping_cost": product.shipping_cost,
+            "shipping_regions": product.shipping_regions,
+            "returns_policy": product.returns_policy,
+            "warranty_policy": product.warranty_policy,
+            "specs": product.specs,
+            "variants": product.variants,
+            "source": product.source,
+        }
+        documents.append(product_to_document(product_dict))
+
+    kb_dir = Path("data/index") / vendor_slug
+    knowledge_base_path = kb_dir / "knowledge_base.jsonl"
+    index_path = kb_dir / "keyword_index.json"
+
+    save_knowledge_base_jsonl(documents, str(knowledge_base_path))
+    build_basic_keyword_index(documents, str(index_path))
+
+    return {
+        "message": "Base de conocimiento construida correctamente.",
+        "vendor_name": vendor.name,
+        "total_products": len(products),
+        "knowledge_base_path": str(knowledge_base_path),
+        "index_path": str(index_path),
+        "preview_documents": documents[:3]
+    }
+
+
+def get_knowledge_base_info(vendor_name: str) -> dict:
+    vendor_slug = slugify(vendor_name)
+    kb_dir = Path("data/index") / vendor_slug
+
+    knowledge_base_path = kb_dir / "knowledge_base.jsonl"
+    index_path = kb_dir / "keyword_index.json"
+
+    if not knowledge_base_path.exists() or not index_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="La base de conocimiento aún no ha sido construida para este vendedor."
+        )
+
+    preview_documents = []
+    with knowledge_base_path.open("r", encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            if i >= 3:
+                break
+            preview_documents.append(json.loads(line))
+
+    return {
+        "message": "Base de conocimiento encontrada.",
+        "vendor_name": vendor_name,
+        "knowledge_base_path": str(knowledge_base_path),
+        "index_path": str(index_path),
+        "preview_documents": preview_documents
     }
