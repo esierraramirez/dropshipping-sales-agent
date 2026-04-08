@@ -174,32 +174,59 @@ def save_normalized_catalog_to_db(db: Session, vendor_name: str) -> dict:
 
     inserted = 0
 
-    for _, row in df.iterrows():
-        product = Product(
-            vendor_id=vendor.id,
-            product_id=str(row.get("product_id", "")).strip(),
-            name=str(row.get("name", "")).strip(),
-            category=str(row.get("category", "")).strip(),
-            price=float(row.get("price", 0)),
-            currency=str(row.get("currency", "COP")).strip(),
-            stock_status=str(row.get("stock_status", "out_of_stock")).strip(),
-            min_shipping_days=int(row.get("min_shipping_days", 0)),
-            max_shipping_days=int(row.get("max_shipping_days", 0)),
-            short_description=row.get("short_description"),
-            full_description=row.get("full_description"),
-            brand=row.get("brand"),
-            shipping_cost=float(row["shipping_cost"]) if row.get("shipping_cost") not in [None, ""] else None,
-            shipping_regions=row.get("shipping_regions"),
-            returns_policy=row.get("returns_policy"),
-            warranty_policy=row.get("warranty_policy"),
-            specs=row.get("specs"),
-            variants=row.get("variants"),
-            source=row.get("source"),
-        )
-        db.add(product)
-        inserted += 1
-
+    for idx, (_, row) in enumerate(df.iterrows()):
+        try:
+            # Helper functions para manejar conversiones con valores inválidos/NaN
+            def safe_float(value, default=0.0):
+                if value is None or value == "" or (isinstance(value, float) and pd.isna(value)):
+                    return default
+                try:
+                    return float(value)
+                except (ValueError, TypeError):
+                    return default
+            
+            def safe_int(value, default=0):
+                if value is None or value == "":
+                    return default
+                try:
+                    return int(float(value))
+                except (ValueError, TypeError):
+                    return default
+            
+            product = Product(
+                vendor_id=vendor.id,
+                product_id=str(row.get("product_id", "")).strip(),
+                name=str(row.get("name", "")).strip(),
+                category=str(row.get("category", "")).strip(),
+                price=safe_float(row.get("price", 0), 0.0),  # Nunca None
+                currency=str(row.get("currency", "COP")).strip(),
+                stock_status=str(row.get("stock_status", "out_of_stock")).strip(),
+                min_shipping_days=safe_int(row.get("min_shipping_days", 0), 0),  # Nunca None
+                max_shipping_days=safe_int(row.get("max_shipping_days", 0), 0),  # Nunca None
+                short_description=row.get("short_description") if row.get("short_description") else None,
+                full_description=row.get("full_description") if row.get("full_description") else None,
+                brand=row.get("brand") if row.get("brand") else None,
+                shipping_cost=safe_float(row.get("shipping_cost"), None),  # Puede ser None (opcional)
+                shipping_regions=row.get("shipping_regions") if row.get("shipping_regions") else None,
+                returns_policy=row.get("returns_policy") if row.get("returns_policy") else None,
+                warranty_policy=row.get("warranty_policy") if row.get("warranty_policy") else None,
+                specs=row.get("specs") if row.get("specs") else None,
+                variants=row.get("variants") if row.get("variants") else None,
+                source=row.get("source") if row.get("source") else None,
+            )
+            db.add(product)
+            inserted += 1
+            print(f"[Row {idx+1}] Producto insertado: {product.product_id}")
+        except Exception as e:
+            # Log error pero continúa con siguiente producto
+            import traceback
+            print(f"[Row {idx+1}] Error procesando producto {row.get('product_id', 'UNKNOWN')}: {str(e)}")
+            traceback.print_exc()
+            continue
+    
+    print(f"Total a insertar: {inserted}")
     db.commit()
+    print(f"Base de datos actualizada con {inserted} productos")
 
     return {
         "message": "Catálogo almacenado en base de datos correctamente.",
@@ -271,6 +298,7 @@ def build_knowledge_base_for_vendor(db: Session, vendor_name: str) -> dict:
         "message": "Base de conocimiento construida correctamente.",
         "vendor_name": vendor.name,
         "total_products": len(products),
+        "documents_created": len(documents),
         "knowledge_base_path": str(knowledge_base_path),
         "index_path": str(index_path),
         "preview_documents": documents[:3]

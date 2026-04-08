@@ -1,0 +1,6 @@
+﻿product_id,name,category,price,currency,stock_status,min_shipping_days,max_shipping_days,short_description,full_description,brand,size,colors,launch_year,sku,shipping_cost,shipping_regions,returns_policy,warranty_policy,specs,variants,source
+SKU-001,Audífonos Inalámbricos,Electrónica,249900.0,COP,out_of_stock,2,5,,,,Universal,"Negro, Blanco",2023,AUD-001,,,,,,,
+SKU-002,Zapatillas Running,Sports,189900.0,COP,out_of_stock,3,7,,,,9,"Rojo, Negro",2022,ZAP-002,,,,,,,
+SKU-ERR,PRODUCTO INVÁLIDO,Categoria_Inexistente,0.0,COP,out_of_stock,2,5,,,,,,2022,,,,,,,,
+SKU-004,Mochila Impermeable,Viaje,129900.0,COP,out_of_stock,3,7,,,,40L,Azul,2023,MOC-40L,,,,,,,
+SKU-005,Lámpara LED RGB,Home,89900.0,COP,out_of_stock,1,3,,,,Única,RGB,2024,LAM-RGB,,,,,,,
