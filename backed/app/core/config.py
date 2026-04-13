@@ -20,6 +20,7 @@ class Settings(BaseModel):
 
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-5.3-chat-latest")
+    WHATSAPP_API_VERSION: str = os.getenv("WHATSAPP_API_VERSION", "v23.0")
 
 
 settings = Settings()
