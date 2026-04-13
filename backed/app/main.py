@@ -3,7 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.router import api_router
 from app.infrastructure.db.session import Base, engine
+
+# Importar modelos para que SQLAlchemy cree las tablas
 from app.models.vendor import Vendor
+from app.models.vendor_settings import VendorSettings
 from app.models.product import Product
 
 app = FastAPI(title=settings.APP_NAME)
