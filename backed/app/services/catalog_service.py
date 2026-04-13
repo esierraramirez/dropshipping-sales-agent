@@ -332,3 +332,30 @@ def get_knowledge_base_info(vendor_name: str) -> dict:
         "index_path": str(index_path),
         "preview_documents": preview_documents
     }
+
+
+# Nuevas funciones para trabajar con Vendor autenticado
+
+
+def process_catalog_upload_for_vendor(file: UploadFile, vendor: Vendor) -> dict:
+    return process_catalog_upload(file=file, vendor_name=vendor.name)
+
+
+def normalize_catalog_for_authenticated_vendor(vendor: Vendor) -> dict:
+    return normalize_catalog_for_vendor(vendor_name=vendor.name)
+
+
+def save_authenticated_vendor_catalog_to_db(db: Session, vendor: Vendor) -> dict:
+    return save_normalized_catalog_to_db(db=db, vendor_name=vendor.name)
+
+
+def list_authenticated_vendor_products(db: Session, vendor: Vendor) -> dict:
+    return list_products_by_vendor(db=db, vendor_name=vendor.name)
+
+
+def build_authenticated_vendor_knowledge_base(db: Session, vendor: Vendor) -> dict:
+    return build_knowledge_base_for_vendor(db=db, vendor_name=vendor.name)
+
+
+def get_authenticated_vendor_knowledge_base_info(vendor: Vendor) -> dict:
+    return get_knowledge_base_info(vendor_name=vendor.name)

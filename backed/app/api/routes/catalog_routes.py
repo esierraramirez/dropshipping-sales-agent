@@ -1,95 +1,68 @@
-from fastapi import APIRouter, UploadFile, File, Form, Depends
+from fastapi import APIRouter, UploadFile, File, Depends
 from sqlalchemy.orm import Session
+
 from app.infrastructure.db.session import get_db
+from app.api.deps import get_current_vendor
+from app.models.vendor import Vendor
+
 from app.schemas.catalog_upload_schema import CatalogUploadResponse
 from app.schemas.catalog_normalization_schema import CatalogNormalizationResponse
 from app.schemas.product_response_schema import ProductListResponse
 from app.schemas.knowledge_base_schema import KnowledgeBaseBuildResponse
+
 from app.services.catalog_service import (
-    process_catalog_upload,
-    normalize_catalog_for_vendor,
-    save_normalized_catalog_to_db,
-    list_products_by_vendor,
-    build_knowledge_base_for_vendor,
-    get_knowledge_base_info,
+    process_catalog_upload_for_vendor,
+    normalize_catalog_for_authenticated_vendor,
+    save_authenticated_vendor_catalog_to_db,
+    list_authenticated_vendor_products,
+    build_authenticated_vendor_knowledge_base,
+    get_authenticated_vendor_knowledge_base_info,
 )
 
 router = APIRouter()
 
 
-@router.post("/catalog/upload", response_model=CatalogUploadResponse)
-def upload_catalog(
-    vendor_name: str = Form(...),
-    file: UploadFile = File(...)
+@router.post("/catalog/upload/me", response_model=CatalogUploadResponse)
+def upload_my_catalog(
+    file: UploadFile = File(...),
+    current_vendor: Vendor = Depends(get_current_vendor),
 ):
-    return process_catalog_upload(file=file, vendor_name=vendor_name)
+    return process_catalog_upload_for_vendor(file=file, vendor=current_vendor)
 
 
-@router.post("/catalog/normalize", response_model=CatalogNormalizationResponse)
-def normalize_catalog(
-    vendor_name: str = Form(...)
+@router.post("/catalog/normalize/me", response_model=CatalogNormalizationResponse)
+def normalize_my_catalog(
+    current_vendor: Vendor = Depends(get_current_vendor),
 ):
-    return normalize_catalog_for_vendor(vendor_name=vendor_name)
+    return normalize_catalog_for_authenticated_vendor(vendor=current_vendor)
 
 
-@router.post("/catalog/save")
-def save_catalog(
-    vendor_name: str = Form(...),
-    db: Session = Depends(get_db)
+@router.post("/catalog/save/me")
+def save_my_catalog(
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor),
 ):
-    try:
-        return save_normalized_catalog_to_db(db=db, vendor_name=vendor_name)
-    except Exception as e:
-        import traceback
-        print(f"Error en /catalog/save: {str(e)}")
-        traceback.print_exc()
-        return {
-            "message": f"Error al guardar catálogo: {str(e)}",
-            "vendor_id": None,
-            "vendor_name": vendor_name,
-            "inserted_products": 0,
-            "error": str(e)
-        }
+    return save_authenticated_vendor_catalog_to_db(db=db, vendor=current_vendor)
 
 
-@router.get("/catalog/products", response_model=ProductListResponse)
-def get_vendor_products(
-    vendor_name: str,
-    db: Session = Depends(get_db)
+@router.get("/catalog/products/me", response_model=ProductListResponse)
+def get_my_products(
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor),
 ):
-    try:
-        return list_products_by_vendor(db=db, vendor_name=vendor_name)
-    except Exception as e:
-        import traceback
-        print(f"Error en GET /catalog/products: {str(e)}")
-        traceback.print_exc()
-        return {
-            "vendor": vendor_name,
-            "total_products": 0,
-            "products": [],
-            "error": str(e)
-        }
+    return list_authenticated_vendor_products(db=db, vendor=current_vendor)
 
 
-@router.post("/catalog/build-knowledge-base", response_model=KnowledgeBaseBuildResponse)
-def build_knowledge_base(
-    vendor_name: str = Form(...),
-    db: Session = Depends(get_db)
+@router.post("/catalog/build-knowledge-base/me", response_model=KnowledgeBaseBuildResponse)
+def build_my_knowledge_base(
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor),
 ):
-    try:
-        return build_knowledge_base_for_vendor(db=db, vendor_name=vendor_name)
-    except Exception as e:
-        import traceback
-        print(f"Error en /catalog/build-knowledge-base: {str(e)}")
-        traceback.print_exc()
-        return {
-            "message": f"Error al construir base de conocimiento: {str(e)}",
-            "vendor_name": vendor_name,
-            "documents_created": 0,
-            "error": str(e)
-        }
+    return build_authenticated_vendor_knowledge_base(db=db, vendor=current_vendor)
 
 
-@router.get("/catalog/knowledge-base")
-def knowledge_base_info(vendor_name: str):
-    return get_knowledge_base_info(vendor_name=vendor_name)
+@router.get("/catalog/knowledge-base/me")
+def get_my_knowledge_base(
+    current_vendor: Vendor = Depends(get_current_vendor),
+):
+    return get_authenticated_vendor_knowledge_base_info(vendor=current_vendor)
