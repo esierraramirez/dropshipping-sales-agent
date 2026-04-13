@@ -1,19 +1,23 @@
 import os
+from dotenv import load_dotenv
 from pydantic import BaseModel
 
 
+load_dotenv()
+
+
 class Settings(BaseModel):
-    APP_NAME: str = "Dropshipping Sales Agent API"
+    APP_NAME: str = os.getenv("APP_NAME", "Dropshipping Sales Agent API")
     ENV: str = os.getenv("ENV", "dev")
 
-    # Usar SQLite por defecto en desarrollo, PostgreSQL solo si se especifica
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "sqlite:///./catalog.db" if os.getenv("ENV", "dev") == "dev" else "postgresql+psycopg2://app:app@localhost:5432/dropshipping"
+        "postgresql+psycopg2://postgres:1234@localhost:5432/dropshipping_db"
     )
 
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me")
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "change-this-secret")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 
 settings = Settings()
