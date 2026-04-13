@@ -12,3 +12,4 @@ alembic
 pandas
 openpyxl
 pytest
+openai
