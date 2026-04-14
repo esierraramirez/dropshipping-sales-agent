@@ -44,7 +44,7 @@ export function WhatsAppPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const handleCopy = (field: string, value: string) => {
-    navigator.clipboard.writeText(value).catch(() => {});
+    navigator.clipboard.writeText(value).catch(() => {});    
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   };

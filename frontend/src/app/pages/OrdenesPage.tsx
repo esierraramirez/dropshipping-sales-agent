@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -14,8 +14,41 @@ import {
   Phone,
   X,
 } from "lucide-react";
+import { api } from "../lib/api";
 
-const mockOrders = [
+interface OrderItem {
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+}
+
+interface Order {
+  id: number;
+  customer_name: string;
+  customer_phone: string;
+  customer_address?: string;
+  items: OrderItem[];
+  total_amount: number;
+  status: string;
+  created_at: string;
+}
+
+interface OrderRow {
+  id: string;
+  cliente: string;
+  telefono: string;
+  direccion: string;
+  productos: Array<{ nombre: string; qty: number; precio: number }>;
+  total: number;
+  estado: string;
+  fecha: string;
+  hora: string;
+  pago: string;
+  notas: string;
+}
+
+const mockOrders: OrderRow[] = [
   {
     id: "#ORD-4821",
     cliente: "María López",
@@ -142,12 +175,70 @@ function StatusBadge({ status }: { status: string }) {
 export function OrdenesPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("Todos");
-  const [selectedOrder, setSelectedOrder] = useState<typeof mockOrders[0] | null>(null);
-  const [orderStatuses, setOrderStatuses] = useState<Record<string, string>>(
-    Object.fromEntries(mockOrders.map((o) => [o.id, o.estado]))
-  );
+  const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [orderStatuses, setOrderStatuses] = useState<Record<string, string>>({});
 
-  const filtered = mockOrders.filter((o) => {
+  // Cargar órdenes del backend
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await api.get<{ orders: Order[] }>("/orders/me", true);
+        
+        // Mapear órdenes del backend al formato del frontend
+        const mappedOrders = response.orders.map((order) => {
+          const date = new Date(order.created_at);
+          return {
+            id: `#ORD-${order.id}`,
+            cliente: order.customer_name,
+            telefono: order.customer_phone,
+            direccion: order.customer_address || "",
+            productos: order.items.map((item) => ({
+              nombre: item.product_name,
+              qty: item.quantity,
+              precio: item.unit_price,
+            })),
+            total: order.total_amount,
+            estado: mapBackendStatus(order.status),
+            fecha: date.toLocaleDateString("es-MX", { year: "numeric", month: "short", day: "numeric" }),
+            hora: date.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+            pago: "Pendiente",
+            notas: "",
+          };
+        });
+
+        setOrders(mappedOrders);
+        setOrderStatuses(Object.fromEntries(mappedOrders.map((o) => [o.id, o.estado])));
+      } catch (err) {
+        console.error("Error cargando órdenes:", err);
+        setError("No se pudieron cargar las órdenes");
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, []);
+
+  // Mapear estados del backend al frontend
+  const mapBackendStatus = (status: string): string => {
+    const mapping: Record<string, string> = {
+      pending: "pendiente",
+      confirmed: "en_proceso",
+      processed: "en_proceso",
+      shipped: "enviado",
+      delivered: "entregado",
+      cancelled: "cancelado",
+    };
+    return mapping[status] || "pendiente";
+  };
+
+  const filtered = orders.filter((o) => {
     const matchSearch =
       o.id.toLowerCase().includes(search.toLowerCase()) ||
       o.cliente.toLowerCase().includes(search.toLowerCase());
@@ -155,20 +246,69 @@ export function OrdenesPage() {
     return matchSearch && matchStatus;
   });
 
-  const updateStatus = (orderId: string, newStatus: string) => {
-    setOrderStatuses((prev) => ({ ...prev, [orderId]: newStatus }));
-    if (selectedOrder?.id === orderId) {
-      setSelectedOrder((prev) => prev ? { ...prev, estado: newStatus } : null);
+  // Mapear estados del frontend al backend
+  const mapToBackendStatus = (status: string): string => {
+    const mapping: Record<string, string> = {
+      pendiente: "pending",
+      en_proceso: "processed",
+      enviado: "shipped",
+      entregado: "delivered",
+      cancelado: "cancelled",
+    };
+    return mapping[status] || "pending";
+  };
+
+  const updateStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const numId = parseInt(orderId.replace("#ORD-", ""));
+      const backendStatus = mapToBackendStatus(newStatus);
+      await api.patch(`/orders/me/${numId}/status`, { status: backendStatus }, true);
+      setOrderStatuses((prev) => ({ ...prev, [orderId]: newStatus }));
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder((prev) => prev ? { ...prev, estado: newStatus } : null);
+      }
+    } catch (err) {
+      console.error("Error actualizando estado:", err);
+      // Revertir cambio en caso de error
+      alert("Error al actualizar el estado");
     }
   };
 
   const statusCounts = {
-    pendiente: mockOrders.filter((o) => orderStatuses[o.id] === "pendiente").length,
-    en_proceso: mockOrders.filter((o) => orderStatuses[o.id] === "en_proceso").length,
-    enviado: mockOrders.filter((o) => orderStatuses[o.id] === "enviado").length,
-    entregado: mockOrders.filter((o) => orderStatuses[o.id] === "entregado").length,
-    cancelado: mockOrders.filter((o) => orderStatuses[o.id] === "cancelado").length,
+    pendiente: orders.filter((o) => orderStatuses[o.id] === "pendiente").length,
+    en_proceso: orders.filter((o) => orderStatuses[o.id] === "en_proceso").length,
+    enviado: orders.filter((o) => orderStatuses[o.id] === "enviado").length,
+    entregado: orders.filter((o) => orderStatuses[o.id] === "entregado").length,
+    cancelado: orders.filter((o) => orderStatuses[o.id] === "cancelado").length,
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center justify-center h-96">
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "32px", marginBottom: "10px" }}>📦</div>
+            <p style={{ color: "#64748b", marginBottom: "4px" }}>Cargando órdenes...</p>
+            <p style={{ fontSize: "13px", color: "#94a3b8" }}>Un momento por favor</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center justify-center h-96">
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "32px", marginBottom: "10px" }}>⚠️</div>
+            <p style={{ color: "#ef4444", marginBottom: "4px" }}>{error}</p>
+            <p style={{ fontSize: "13px", color: "#94a3b8" }}>Verifica tu conexión e intenta de nuevo</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -320,6 +460,21 @@ export function OrdenesPage() {
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} style={{ textAlign: "center", padding: "40px" }}>
+                  <div style={{ color: "#94a3b8" }}>
+                    <div style={{ fontSize: "28px", marginBottom: "8px" }}>📭</div>
+                    <p style={{ fontSize: "14px", fontWeight: 500, marginBottom: "4px" }}>
+                      {orders.length === 0 ? "No hay órdenes registradas" : "No hay resultados"}
+                    </p>
+                    <p style={{ fontSize: "12px", color: "#cbd5e1" }}>
+                      {orders.length === 0 ? "Las órdenes aparecerán aquí después de que se concrete una venta en el chat" : "Intenta con otros filtros o términos de búsqueda"}
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
