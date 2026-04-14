@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Bot,
   Send,
@@ -56,10 +56,26 @@ const initialMessages: Message[] = [
 ];
 
 export function AgentePage() {
+  const STORAGE_KEY = "agent_chat_messages";
+
+  // Initialize messages from localStorage or use defaults
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? JSON.parse(stored) : initialMessages;
+    } catch {
+      return initialMessages;
+    }
+  });
+
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
+
   const [agentActive, setAgentActive] = useState(true);
   const [selectedTone, setSelectedTone] = useState("amigable");
   const [schedule, setSchedule] = useState(scheduleSlots);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState("");
@@ -350,7 +366,10 @@ export function AgentePage() {
             </div>
           </div>
           <button
-            onClick={() => setMessages(initialMessages)}
+            onClick={() => {
+              setMessages(initialMessages);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(initialMessages));
+            }}
             className="ml-auto rounded-lg p-2 transition-all"
             style={{ background: "#f8fafc", border: "1px solid #e2e8f0", color: "#94a3b8", cursor: "pointer" }}
             title="Reiniciar conversación"
