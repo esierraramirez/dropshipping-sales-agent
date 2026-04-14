@@ -13,7 +13,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useState } from "react";
-import { clearAuthState } from "../../lib/auth";
+import { clearAuthState, getCurrentVendor } from "../../lib/auth";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -35,6 +35,17 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const navigate = useNavigate();
+  const vendor = getCurrentVendor();
+
+  // Get initials from vendor name for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const handleLogout = () => {
     clearAuthState();
@@ -164,15 +175,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
               }}
             >
-              <span style={{ color: "#fff", fontSize: "11px", fontWeight: 700 }}>JG</span>
+              <span style={{ color: "#fff", fontSize: "11px", fontWeight: 700 }}>
+                {getInitials(vendor?.name || "Usuario")}
+              </span>
             </div>
             {!collapsed && (
               <div className="flex-1 overflow-hidden">
                 <p style={{ color: "#e2e8f0", fontSize: "12.5px", fontWeight: 500, whiteSpace: "nowrap" }}>
-                  Juan García
+                  {vendor?.name || "Mi Empresa"}
                 </p>
                 <p style={{ color: "#475569", fontSize: "11px", whiteSpace: "nowrap" }}>
-                  Admin
+                  {vendor?.email || "empresa@email.com"}
                 </p>
               </div>
             )}
