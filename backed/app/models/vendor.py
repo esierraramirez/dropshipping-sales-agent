@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Boolean, DateTime
+from sqlalchemy import String, Boolean, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.db.session import Base
@@ -17,6 +17,18 @@ class Vendor(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Información de empresa
+    rfc: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, default=None)
+    sector: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, default=None)
+    phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, default=None)
+    website: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, default=None)
+    address: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, default=None)
+    city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, default=None)
+    state: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, default=None)
+    country: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, default="México")
+    postal_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default=None)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[Optional[datetime]] = mapped_column(

@@ -30,6 +30,16 @@ def register_vendor(db: Session, payload: RegisterVendorRequest) -> dict:
         email=payload.email,
         password_hash=hash_password(payload.password),
         is_active=True,
+        rfc=payload.rfc,
+        sector=payload.sector,
+        phone=payload.phone,
+        website=payload.website,
+        address=payload.address,
+        city=payload.city,
+        state=payload.state,
+        country=payload.country or "México",
+        postal_code=payload.postal_code,
+        description=payload.description,
     )
 
     db.add(vendor)

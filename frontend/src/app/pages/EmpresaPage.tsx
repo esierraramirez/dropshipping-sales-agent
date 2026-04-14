@@ -1,20 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Building2, MapPin, Phone, Globe, Mail, Camera, Save, Edit3, CheckCircle2 } from "lucide-react";
+import { api, ApiError } from "../lib/api";
 
-const initialData = {
-  nombre: "Mi Moda Online",
-  rfc: "MMO230401ABC",
-  giro: "Dropshipping / Moda y Accesorios",
-  telefono: "+52 1 55 1234 5678",
-  email: "contacto@mimoda.mx",
-  sitio: "www.mimoda.mx",
-  direccion: "Av. Insurgentes Sur 1234, Col. Del Valle",
-  ciudad: "Ciudad de México",
-  estado: "CDMX",
-  cp: "03100",
-  pais: "México",
-  descripcion: "Tienda de moda online especializada en ropa de mujer, accesorios y calzado. Distribuidores directos de fabricantes nacionales e internacionales con envíos a toda la república.",
-};
+interface VendorData {
+  id: number;
+  name: string;
+  email: string;
+  rfc: string | null;
+  sector: string | null;
+  phone: string | null;
+  website: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postal_code: string | null;
+  description: string | null;
+}
+
+interface Stats {
+  total_products: number;
+  total_orders: number;
+  total_customers: number;
+}
 
 function FormField({
   label,
@@ -25,7 +33,7 @@ function FormField({
   editing,
 }: {
   label: string;
-  value: string;
+  value: string | null;
   onChange: (v: string) => void;
   type?: string;
   placeholder?: string;
@@ -39,7 +47,7 @@ function FormField({
       {editing ? (
         <input
           type={type}
-          value={value}
+          value={value || ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className="w-full rounded-xl px-4 py-2.5 outline-none transition-all"
@@ -63,19 +71,87 @@ function FormField({
 }
 
 export function EmpresaPage() {
-  const [data, setData] = useState(initialData);
+  const [vendor, setVendor] = useState<VendorData | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    setEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  const [editData, setEditData] = useState<Partial<VendorData>>({});
+
+  // Cargar datos al montar
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const [vendorRes, statsRes] = await Promise.all([
+        api.get<VendorData>("/empresa/me", true),
+        api.get<Stats>("/empresa/me/stats", true),
+      ]);
+      setVendor(vendorRes);
+      setStats(statsRes);
+      setEditData(vendorRes);
+    } catch (err) {
+      console.error("Error cargando datos:", err);
+      setError("No se pudieron cargar los datos de la empresa");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateField = (field: keyof typeof initialData, value: string) => {
-    setData((prev) => ({ ...prev, [field]: value }));
+  const handleSave = async () => {
+    if (!vendor) return;
+    try {
+      setSaving(true);
+      setError("");
+      const updated = await api.patch<VendorData>("/empresa/me", editData, true);
+      setVendor(updated);
+      setEditData(updated);
+      setEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.detail);
+      } else {
+        setError("Error al guardar cambios");
+      }
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const updateEditField = <K extends keyof VendorData>(key: K, value: any) => {
+    setEditData((prev) => ({ ...prev, [key]: value || null }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "32px", marginBottom: "10px" }}>🏢</div>
+          <p style={{ color: "#64748b", marginBottom: "4px" }}>Cargando información...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!vendor) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "32px", marginBottom: "10px" }}>⚠️</div>
+          <p style={{ color: "#ef4444" }}>{error || "No se pudo cargar la información"}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
@@ -91,14 +167,22 @@ export function EmpresaPage() {
               <span style={{ fontSize: "13px", color: "#10b981", fontWeight: 500 }}>Cambios guardados</span>
             </div>
           )}
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl px-4 py-2"
+              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
+            >
+              <span style={{ fontSize: "13px", color: "#ef4444", fontWeight: 500 }}>{error}</span>
+            </div>
+          )}
           {editing ? (
             <button
               onClick={handleSave}
+              disabled={saving}
               className="flex items-center gap-2 rounded-xl px-5 py-2.5"
-              style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer" }}
+              style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: "13px", fontWeight: 600, border: "none", cursor: saving ? "wait" : "pointer", opacity: saving ? 0.7 : 1 }}
             >
               <Save size={14} />
-              Guardar cambios
+              {saving ? "Guardando..." : "Guardar cambios"}
             </button>
           ) : (
             <button
@@ -130,31 +214,22 @@ export function EmpresaPage() {
             >
               <Building2 size={32} style={{ color: "#fff" }} />
             </div>
-            {editing && (
-              <button
-                className="absolute -bottom-1 -right-1 rounded-lg flex items-center justify-center"
-                style={{ width: "26px", height: "26px", background: "#0f172a", border: "2px solid #fff" }}
-              >
-                <Camera size={12} style={{ color: "#fff" }} />
-              </button>
-            )}
           </div>
           <div>
-            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>{data.nombre}</h2>
-            <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "2px" }}>{data.giro}</p>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>{vendor.name}</h2>
+            <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "2px" }}>{vendor.sector || "Sector no especificado"}</p>
             <div className="flex items-center gap-4 mt-3">
               <div className="flex items-center gap-1.5">
                 <div className="rounded-full" style={{ width: "8px", height: "8px", background: "#10b981" }} />
-                <span style={{ fontSize: "12px", color: "#10b981", fontWeight: 500 }}>Plan Pro activo</span>
+                <span style={{ fontSize: "12px", color: "#10b981", fontWeight: 500 }}>Cuenta activa</span>
               </div>
-              <span style={{ fontSize: "12px", color: "#94a3b8" }}>Miembro desde Abr 2024</span>
             </div>
           </div>
           <div className="ml-auto flex gap-3">
             {[
-              { label: "Productos", value: "1,248" },
-              { label: "Órdenes", value: "342" },
-              { label: "Clientes", value: "186" },
+              { label: "Productos", value: stats?.total_products ?? "0" },
+              { label: "Órdenes", value: stats?.total_orders ?? "0" },
+              { label: "Clientes", value: stats?.total_customers ?? "0" },
             ].map(({ label, value }) => (
               <div key={label} className="text-center px-4 py-2 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #f1f5f9" }}>
                 <p style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>{value}</p>
@@ -177,9 +252,27 @@ export function EmpresaPage() {
             <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>Información general</h3>
           </div>
           <div className="space-y-3">
-            <FormField label="Nombre de empresa" value={data.nombre} onChange={(v) => updateField("nombre", v)} editing={editing} />
-            <FormField label="RFC / NIT" value={data.rfc} onChange={(v) => updateField("rfc", v)} editing={editing} />
-            <FormField label="Giro / Sector" value={data.giro} onChange={(v) => updateField("giro", v)} editing={editing} />
+            <FormField 
+              label="Nombre de empresa" 
+              value={editData.name || ""} 
+              onChange={(v) => updateEditField("name", v)} 
+              editing={editing} 
+              placeholder="Nombre de empresa"
+            />
+            <FormField 
+              label="RFC / NIT" 
+              value={editData.rfc} 
+              onChange={(v) => updateEditField("rfc", v)} 
+              editing={editing} 
+              placeholder="ABC123456XYZ"
+            />
+            <FormField 
+              label="Sector" 
+              value={editData.sector} 
+              onChange={(v) => updateEditField("sector", v)} 
+              editing={editing} 
+              placeholder="Moda, Electrónica, Alimentos..."
+            />
           </div>
         </div>
 
@@ -193,9 +286,25 @@ export function EmpresaPage() {
             <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>Datos de contacto</h3>
           </div>
           <div className="space-y-3">
-            <FormField label="Teléfono" value={data.telefono} onChange={(v) => updateField("telefono", v)} editing={editing} />
-            <FormField label="Correo electrónico" value={data.email} onChange={(v) => updateField("email", v)} type="email" editing={editing} />
-            <FormField label="Sitio web" value={data.sitio} onChange={(v) => updateField("sitio", v)} editing={editing} />
+            <FormField 
+              label="Teléfono" 
+              value={editData.phone} 
+              onChange={(v) => updateEditField("phone", v)} 
+              editing={editing} 
+              placeholder="+52 1 55 1234 5678"
+            />
+            <FormField 
+              label="Correo electrónico" 
+              value={vendor.email} 
+              editing={false} 
+            />
+            <FormField 
+              label="Sitio web" 
+              value={editData.website} 
+              onChange={(v) => updateEditField("website", v)} 
+              editing={editing} 
+              placeholder="www.mitienda.com"
+            />
           </div>
         </div>
 
@@ -209,14 +318,44 @@ export function EmpresaPage() {
             <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>Dirección fiscal</h3>
           </div>
           <div className="space-y-3">
-            <FormField label="Dirección" value={data.direccion} onChange={(v) => updateField("direccion", v)} editing={editing} />
+            <FormField 
+              label="Dirección" 
+              value={editData.address} 
+              onChange={(v) => updateEditField("address", v)} 
+              editing={editing} 
+              placeholder="Av. Insurgentes Sur 1234"
+            />
             <div className="grid grid-cols-2 gap-3">
-              <FormField label="Ciudad" value={data.ciudad} onChange={(v) => updateField("ciudad", v)} editing={editing} />
-              <FormField label="Estado" value={data.estado} onChange={(v) => updateField("estado", v)} editing={editing} />
+              <FormField 
+                label="Ciudad" 
+                value={editData.city} 
+                onChange={(v) => updateEditField("city", v)} 
+                editing={editing} 
+                placeholder="México"
+              />
+              <FormField 
+                label="Estado" 
+                value={editData.state} 
+                onChange={(v) => updateEditField("state", v)} 
+                editing={editing} 
+                placeholder="CDMX"
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <FormField label="C.P." value={data.cp} onChange={(v) => updateField("cp", v)} editing={editing} />
-              <FormField label="País" value={data.pais} onChange={(v) => updateField("pais", v)} editing={editing} />
+              <FormField 
+                label="C.P." 
+                value={editData.postal_code} 
+                onChange={(v) => updateEditField("postal_code", v)} 
+                editing={editing} 
+                placeholder="03100"
+              />
+              <FormField 
+                label="País" 
+                value={editData.country} 
+                onChange={(v) => updateEditField("country", v)} 
+                editing={editing} 
+                placeholder="México"
+              />
             </div>
           </div>
         </div>
@@ -236,41 +375,21 @@ export function EmpresaPage() {
             </label>
             {editing ? (
               <textarea
-                value={data.descripcion}
-                onChange={(e) => updateField("descripcion", e.target.value)}
+                value={editData.description || ""}
+                onChange={(e) => updateEditField("description", e.target.value)}
                 rows={5}
                 className="w-full rounded-xl px-4 py-2.5 outline-none resize-none"
                 style={{ background: "#f8fafc", border: "1.5px solid #6366f1", fontSize: "13.5px", color: "#0f172a" }}
+                placeholder="Describe tu negocio y qué productos/servicios ofreces"
               />
             ) : (
               <div
                 className="rounded-xl px-4 py-3"
-                style={{ background: "#f8fafc", border: "1px solid #f1f5f9", fontSize: "13.5px", color: "#374151", lineHeight: 1.7 }}
+                style={{ background: "#f8fafc", border: "1px solid #f1f5f9", fontSize: "13.5px", color: "#374151", lineHeight: 1.7, minHeight: "120px" }}
               >
-                {data.descripcion}
+                {editData.description || <span style={{ color: "#cbd5e1" }}>Sin descripción</span>}
               </div>
             )}
-          </div>
-
-          {/* Subscription plan */}
-          <div
-            className="mt-4 rounded-xl p-4"
-            style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.06))", border: "1px solid rgba(99,102,241,0.15)" }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p style={{ fontSize: "13px", fontWeight: 700, color: "#6366f1" }}>Plan Pro</p>
-                <p style={{ fontSize: "11.5px", color: "#94a3b8", marginTop: "2px" }}>
-                  Renovación: 13 May 2026
-                </p>
-              </div>
-              <button
-                className="rounded-lg px-3 py-1.5"
-                style={{ background: "#6366f1", color: "#fff", fontSize: "12px", fontWeight: 600, border: "none", cursor: "pointer" }}
-              >
-                Gestionar plan
-              </button>
-            </div>
           </div>
         </div>
       </div>
