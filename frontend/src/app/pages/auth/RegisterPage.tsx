@@ -15,10 +15,17 @@ export function RegisterPage() {
     password: "",
     rfc: "",
     sector: "",
+    phone: "",
+    website: "",
+    address: "",
+    city: "",
+    state: "",
     country: "México",
+    postal_code: "",
+    description: "",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -36,7 +43,14 @@ export function RegisterPage() {
           password: form.password,
           rfc: form.rfc || undefined,
           sector: form.sector || undefined,
+          phone: form.phone || undefined,
+          website: form.website || undefined,
+          address: form.address || undefined,
+          city: form.city || undefined,
+          state: form.state || undefined,
           country: form.country,
+          postal_code: form.postal_code || undefined,
+          description: form.description || undefined,
         },
         false
       );
@@ -61,7 +75,7 @@ export function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ background: "#f8fafc" }}>
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-2xl">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
           <div
@@ -98,118 +112,262 @@ export function RegisterPage() {
             ))}
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+            {/* Información básica */}
             <div>
-              <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
-                Nombre de empresa
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                className="w-full rounded-xl px-4 py-3 outline-none"
-                style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
-                placeholder="Mi Tienda Online"
-                required
-              />
-            </div>
+              <h3 style={{ fontSize: "12px", fontWeight: 700, color: "#6366f1", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "12px" }}>
+                Información de la Empresa
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                    Nombre de empresa *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    className="w-full rounded-xl px-4 py-3 outline-none"
+                    style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                    placeholder="Mi Tienda Online"
+                    required
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
-                  RFC (opcional)
-                </label>
-                <input
-                  type="text"
-                  name="rfc"
-                  value={form.rfc}
-                  onChange={handleChange}
-                  className="w-full rounded-xl px-4 py-3 outline-none"
-                  style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
-                  placeholder="ABC123456XYZ"
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
-                  Sector (opcional)
-                </label>
-                <input
-                  type="text"
-                  name="sector"
-                  value={form.sector}
-                  onChange={handleChange}
-                  className="w-full rounded-xl px-4 py-3 outline-none"
-                  style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
-                  placeholder="Moda, Electrónica, etc."
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                      RFC
+                    </label>
+                    <input
+                      type="text"
+                      name="rfc"
+                      value={form.rfc}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-4 py-3 outline-none"
+                      style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                      placeholder="ABC123456XYZ"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                      Sector
+                    </label>
+                    <input
+                      type="text"
+                      name="sector"
+                      value={form.sector}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-4 py-3 outline-none"
+                      style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                      placeholder="Moda, Electrónica, etc."
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
-                Correo electrónico
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                className="w-full rounded-xl px-4 py-3 outline-none"
-                style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
-                placeholder="tu@empresa.com"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
-                Contraseña
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  className="w-full rounded-xl px-4 py-3 outline-none pr-12"
-                  style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
-                  placeholder="Mínimo 8 caracteres"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2"
-                  style={{ color: "#94a3b8" }}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+                <div>
+                  <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                    Descripción del negocio
+                  </label>
+                  <textarea
+                    name="description"
+                    value={form.description}
+                    onChange={handleChange}
+                    className="w-full rounded-xl px-4 py-3 outline-none resize-none"
+                    style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                    placeholder="Cuéntanos sobre tu negocio..."
+                    rows={3}
+                  />
+                </div>
               </div>
             </div>
 
+            {/* Información de contacto */}
             <div>
-              <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
-                País / Región
-              </label>
-              <select
-                name="country"
-                value={form.country}
-                onChange={handleChange}
-                className="w-full rounded-xl px-4 py-3 outline-none"
-                style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
-              >
-                <option>México</option>
-                <option>Colombia</option>
-                <option>Argentina</option>
-                <option>España</option>
-                <option>Perú</option>
-                <option>Chile</option>
-              </select>
+              <h3 style={{ fontSize: "12px", fontWeight: 700, color: "#6366f1", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "12px" }}>
+                Información de Contacto
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                    Correo electrónico *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    className="w-full rounded-xl px-4 py-3 outline-none"
+                    style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                    placeholder="tu@empresa.com"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                      Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-4 py-3 outline-none"
+                      style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                      placeholder="+52 1234567890"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                      Sitio web
+                    </label>
+                    <input
+                      type="url"
+                      name="website"
+                      value={form.website}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-4 py-3 outline-none"
+                      style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                      placeholder="https://tu-tienda.com"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Información de ubicación */}
+            <div>
+              <h3 style={{ fontSize: "12px", fontWeight: 700, color: "#6366f1", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "12px" }}>
+                Ubicación
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                    Dirección
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={form.address}
+                    onChange={handleChange}
+                    className="w-full rounded-xl px-4 py-3 outline-none"
+                    style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                    placeholder="Calle Principal 123"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                      Ciudad
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={form.city}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-4 py-3 outline-none"
+                      style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                      placeholder="Ciudad de México"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                      Estado
+                    </label>
+                    <input
+                      type="text"
+                      name="state"
+                      value={form.state}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-4 py-3 outline-none"
+                      style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                      placeholder="CDMX"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                      País / Región *
+                    </label>
+                    <select
+                      name="country"
+                      value={form.country}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-4 py-3 outline-none"
+                      style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                    >
+                      <option>México</option>
+                      <option>Colombia</option>
+                      <option>Argentina</option>
+                      <option>España</option>
+                      <option>Perú</option>
+                      <option>Chile</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                      Código postal
+                    </label>
+                    <input
+                      type="text"
+                      name="postal_code"
+                      value={form.postal_code}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-4 py-3 outline-none"
+                      style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                      placeholder="28001"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Seguridad */}
+            <div>
+              <h3 style={{ fontSize: "12px", fontWeight: 700, color: "#6366f1", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "12px" }}>
+                Credenciales
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                    Contraseña *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={form.password}
+                      onChange={handleChange}
+                      className="w-full rounded-xl px-4 py-3 outline-none pr-12"
+                      style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                      placeholder="Mínimo 6 caracteres"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2"
+                      style={{ color: "#94a3b8" }}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <input type="checkbox" id="terms" className="mt-1" />
+              <input type="checkbox" id="terms" className="mt-1" required />
               <label htmlFor="terms" style={{ fontSize: "12.5px", color: "#64748b", fontWeight: 400 }}>
                 Acepto los{" "}
                 <a href="#" style={{ color: "#6366f1" }}>Términos de servicio</a>
@@ -230,7 +388,7 @@ export function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 rounded-xl py-3 transition-all"
+              className="w-full flex items-center justify-center gap-2 rounded-xl py-3 transition-all sticky bottom-0"
               style={{
                 background: loading ? "#c7d2fe" : "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
                 color: "#fff",
@@ -250,7 +408,7 @@ export function RegisterPage() {
                 </>
               ) : (
                 <>
-                  Crear cuenta gratis
+                  Crear cuenta
                   <ArrowRight size={16} />
                 </>
               )}
