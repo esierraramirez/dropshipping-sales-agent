@@ -9,9 +9,13 @@ from app.models.order import Order
 from app.models.whatsapp_connection import WhatsAppConnection
 
 if __name__ == "__main__":
-    print("Creating all tables...")
+    print("🔄 Dropping all existing tables...")
+    Base.metadata.drop_all(bind=engine)
+    print("✅ All tables dropped")
+    
+    print("\n🔨 Creating all tables with fresh schema...")
     Base.metadata.create_all(bind=engine)
     print("✅ Database initialized successfully!")
-    print("Tables created:")
+    print("\n📋 Tables created:")
     for table_name in Base.metadata.tables.keys():
         print(f"  - {table_name}")

@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { Outlet } from "react-router";
+import { Navigate, Outlet } from "react-router";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { isAuthenticated } from "../../lib/auth";
 
 export function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
+
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#f8fafc" }}>

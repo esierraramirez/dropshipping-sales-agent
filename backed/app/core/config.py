@@ -11,7 +11,7 @@ class Settings(BaseModel):
 
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql+psycopg2://postgres:1234@localhost:5432/dropshipping_db",
+        "postgresql://postgres:Negritomotero%24123@db.zywqomqbvxuwbksigcmp.supabase.co:5432/postgres",
     )
 
     JWT_SECRET: str = os.getenv("JWT_SECRET", "change-this-secret")

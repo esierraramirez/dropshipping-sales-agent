@@ -13,6 +13,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useState } from "react";
+import { clearAuthState } from "../../lib/auth";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -36,6 +37,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    clearAuthState();
     navigate("/login");
   };
 

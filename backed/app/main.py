@@ -26,4 +26,13 @@ app.include_router(api_router)
 
 @app.on_event("startup")
 def on_startup():
-    Base.metadata.create_all(bind=engine)
+    """
+    Lazy init: intentar crear tablas, pero no fallar si no hay conexión.
+    Las tablas se crearán cuando el primer request necesite la BD.
+    """
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ Tablas creadas/verificadas en Supabase")
+    except Exception as e:
+        print(f"⚠️  No se pudo conectar en startup: {type(e).__name__}")
+        print("   Las tablas se crearán con el primer request")

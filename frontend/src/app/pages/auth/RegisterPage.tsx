@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Eye, EyeOff, Zap, ArrowRight, CheckCircle2 } from "lucide-react";
+import { api, ApiError, type AuthResponse } from "../../lib/api";
+import { setAuthState } from "../../lib/auth";
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
     empresa: "",
@@ -17,13 +20,39 @@ export function RegisterPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const businessName = form.empresa.trim() || form.name.trim();
+      const response = await api.post<AuthResponse>(
+        "/auth/register",
+        {
+          name: businessName,
+          email: form.email,
+          password: form.password,
+        },
+        false
+      );
+
+      setAuthState({
+        accessToken: response.access_token,
+        tokenType: response.token_type,
+        vendor: response.vendor,
+      });
+
       navigate("/dashboard");
-    }, 1500);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.detail);
+      } else {
+        setError("No fue posible crear la cuenta. Revisa la conexión con el backend.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -163,6 +192,15 @@ export function RegisterPage() {
                 <a href="#" style={{ color: "#6366f1" }}>Política de privacidad</a>
               </label>
             </div>
+
+            {error && (
+              <div
+                className="rounded-xl px-3 py-2"
+                style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}
+              >
+                <p style={{ fontSize: "12.5px", color: "#b91c1c", fontWeight: 500 }}>{error}</p>
+              </div>
+            )}
 
             <button
               type="submit"

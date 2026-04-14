@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Upload,
   Search,
@@ -16,8 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { api, ApiError, type ProductsListResponse } from "../lib/api";
 
-const mockProducts = [
+const fallbackProducts = [
   { id: 1, sku: "VES-001", nombre: "Vestido floral verano", categoria: "Vestidos", precio: 480, stock: 42, estado: "activo", imagen: "🌸" },
   { id: 2, sku: "BLU-002", nombre: "Blusa casual manga larga", categoria: "Blusas", precio: 290, stock: 87, estado: "activo", imagen: "👚" },
   { id: 3, sku: "JEA-003", nombre: "Jeans skinny mujer", categoria: "Pantalones", precio: 650, stock: 15, estado: "bajo_stock", imagen: "👖" },
@@ -36,17 +37,93 @@ const estadoConfig: Record<string, { label: string; color: string; bg: string }>
   sin_stock: { label: "Sin stock", color: "#ef4444", bg: "rgba(239,68,68,0.1)" },
 };
 
+type UiProduct = {
+  id: number;
+  sku: string;
+  nombre: string;
+  categoria: string;
+  precio: number;
+  stock: number;
+  estado: "activo" | "bajo_stock" | "sin_stock";
+  imagen: string;
+};
+
+function categoryEmoji(category: string) {
+  const c = category.toLowerCase();
+  if (c.includes("vest")) return "👗";
+  if (c.includes("blus")) return "👚";
+  if (c.includes("pant") || c.includes("jean")) return "👖";
+  if (c.includes("calz") || c.includes("zap")) return "👟";
+  if (c.includes("acces")) return "👜";
+  return "📦";
+}
+
+function stockFromStatus(stockStatus: string) {
+  const status = stockStatus.toLowerCase();
+  if (status.includes("out")) return 0;
+  if (status.includes("low")) return 12;
+  return 50;
+}
+
+function uiStatusFromStock(stock: number): UiProduct["estado"] {
+  if (stock <= 0) return "sin_stock";
+  if (stock < 20) return "bajo_stock";
+  return "activo";
+}
+
+function mapProductsResponse(response: ProductsListResponse): UiProduct[] {
+  return response.products.map((product) => {
+    const stock = stockFromStatus(product.stock_status);
+    return {
+      id: product.id,
+      sku: product.product_id,
+      nombre: product.name,
+      categoria: product.category,
+      precio: Number(product.price || 0),
+      stock,
+      estado: uiStatusFromStock(stock),
+      imagen: categoryEmoji(product.category),
+    };
+  });
+}
+
 export function CatalogoPage() {
   const [search, setSearch] = useState("");
   const [uploadState, setUploadState] = useState<"idle" | "uploading" | "success">("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("Todas");
   const [dragOver, setDragOver] = useState(false);
+  const [products, setProducts] = useState<UiProduct[]>(fallbackProducts);
+  const [totalProducts, setTotalProducts] = useState(fallbackProducts.length);
+  const [error, setError] = useState("");
+  const [uploadSummary, setUploadSummary] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const loadProducts = async () => {
+    try {
+      const response = await api.get<ProductsListResponse>("/catalog/products/me", true);
+      const mapped = mapProductsResponse(response);
+      setProducts(mapped);
+      setTotalProducts(response.total_products);
+      setError("");
+      return response.total_products;
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.detail);
+      } else {
+        setError("No fue posible cargar el catálogo desde el backend.");
+      }
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
 
   const categories = ["Todas", "Vestidos", "Blusas", "Pantalones", "Calzado", "Accesorios", "Faldas", "Sudaderas"];
 
-  const filtered = mockProducts.filter((p) => {
+  const filtered = products.filter((p) => {
     const matchSearch =
       p.nombre.toLowerCase().includes(search.toLowerCase()) ||
       p.sku.toLowerCase().includes(search.toLowerCase()) ||
@@ -55,36 +132,71 @@ export function CatalogoPage() {
     return matchSearch && matchCategory;
   });
 
-  const handleUpload = () => {
+  const handleUpload = async (file?: File) => {
+    if (!file) return;
+
+    setError("");
+    setUploadSummary("");
     setUploadState("uploading");
-    setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setUploadState("success");
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 150);
+    setUploadProgress(15);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      await api.post("/catalog/upload/me", formData, true);
+      setUploadProgress(45);
+      await api.post("/catalog/normalize/me", {}, true);
+      setUploadProgress(75);
+      await api.post("/catalog/save/me", {}, true);
+      setUploadProgress(95);
+      const currentTotal = await loadProducts();
+      setUploadProgress(100);
+      setUploadSummary(
+        currentTotal !== null
+          ? `Catálogo sincronizado. Total actual: ${currentTotal} productos.`
+          : "La importación finalizó y los productos se sincronizaron."
+      );
+      setUploadState("success");
+    } catch (err) {
+      setUploadState("idle");
+      if (err instanceof ApiError) {
+        setError(err.detail);
+      } else {
+        setError("No fue posible importar el catálogo en el backend.");
+      }
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    handleUpload();
+    const file = e.dataTransfer.files?.[0];
+    handleUpload(file);
   };
+
+  const activos = products.filter((p) => p.estado === "activo").length;
+  const bajoStock = products.filter((p) => p.estado === "bajo_stock").length;
+  const sinStock = products.filter((p) => p.estado === "sin_stock").length;
 
   return (
     <div className="space-y-5">
+      {error && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}
+        >
+          <p style={{ fontSize: "12.5px", color: "#b91c1c", fontWeight: 500 }}>{error}</p>
+        </div>
+      )}
+
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total productos", value: "1,248", icon: "📦", color: "#6366f1" },
-          { label: "Activos", value: "1,180", icon: "✅", color: "#10b981" },
-          { label: "Bajo stock", value: "52", icon: "⚠️", color: "#f59e0b" },
-          { label: "Sin stock", value: "16", icon: "❌", color: "#ef4444" },
+          { label: "Total productos", value: `${totalProducts}`, icon: "📦", color: "#6366f1" },
+          { label: "Activos", value: `${activos}`, icon: "✅", color: "#10b981" },
+          { label: "Bajo stock", value: `${bajoStock}`, icon: "⚠️", color: "#f59e0b" },
+          { label: "Sin stock", value: `${sinStock}`, icon: "❌", color: "#ef4444" },
         ].map(({ label, value, icon, color }) => (
           <div
             key={label}
@@ -134,7 +246,7 @@ export function CatalogoPage() {
               type="file"
               accept=".xlsx,.xls,.csv"
               className="hidden"
-              onChange={handleUpload}
+              onChange={(e) => handleUpload(e.target.files?.[0])}
             />
             <div
               className="mx-auto rounded-2xl flex items-center justify-center mb-4"
@@ -202,7 +314,7 @@ export function CatalogoPage() {
                 Catálogo importado exitosamente
               </p>
               <p style={{ fontSize: "12.5px", color: "#6b7280", marginTop: "2px" }}>
-                Se cargaron <strong>248 productos nuevos</strong> · 3 duplicados ignorados
+                {uploadSummary || "La importación finalizó y los productos ya se guardaron en el backend."}
               </p>
             </div>
             <button
@@ -413,7 +525,7 @@ export function CatalogoPage() {
           style={{ borderTop: "1px solid #f1f5f9" }}
         >
           <span style={{ fontSize: "12.5px", color: "#94a3b8" }}>
-            Mostrando {filtered.length} de 1,248 productos
+            Mostrando {filtered.length} de {totalProducts} productos
           </span>
           <div className="flex items-center gap-2">
             <button className="rounded-lg p-1.5" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", color: "#94a3b8", cursor: "pointer" }}>

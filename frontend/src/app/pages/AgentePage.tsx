@@ -12,6 +12,7 @@ import {
   Settings2,
   Info,
 } from "lucide-react";
+import { api, ApiError, type ChatResponse } from "../lib/api";
 
 const tones = [
   {
@@ -54,31 +55,6 @@ const initialMessages: Message[] = [
   },
 ];
 
-const agentResponses: Record<string, string> = {
-  default:
-    "Entiendo tu consulta. Te puedo ayudar con información sobre nuestros productos, rastrear tu pedido o resolver cualquier duda. ¿Qué necesitas?",
-  precio:
-    "Claro, te comparto los precios actuales. Nuestros vestidos van desde $380 hasta $1,450 MXN. ¿Te gustaría ver algún modelo en específico?",
-  envio:
-    "¡Hacemos envíos a toda la república! El tiempo de entrega es de 3-5 días hábiles. Envío gratis en compras mayores a $800 MXN. 📦",
-  pedido:
-    "Para rastrear tu pedido, necesito tu número de orden. Puedes encontrarlo en el correo de confirmación que te enviamos. ¿Lo tienes a la mano?",
-  hola:
-    "¡Hola! 😊 Qué gusto saludarte. Estoy aquí para ayudarte con cualquier consulta sobre nuestros productos y pedidos. ¿En qué te puedo asistir?",
-  catalogo:
-    "Tenemos más de 1,200 productos disponibles en categorías como vestidos, blusas, jeans, calzado y accesorios. ¿Hay alguna categoría que te interese? 🛍️",
-};
-
-function getAgentResponse(input: string): string {
-  const lower = input.toLowerCase();
-  if (lower.includes("precio") || lower.includes("cuánto") || lower.includes("costo")) return agentResponses.precio;
-  if (lower.includes("envío") || lower.includes("entrega") || lower.includes("shipping")) return agentResponses.envio;
-  if (lower.includes("pedido") || lower.includes("orden") || lower.includes("rastrear")) return agentResponses.pedido;
-  if (lower.includes("hola") || lower.includes("buenas") || lower.includes("hi")) return agentResponses.hola;
-  if (lower.includes("catálogo") || lower.includes("productos") || lower.includes("vestido")) return agentResponses.catalogo;
-  return agentResponses.default;
-}
-
 export function AgentePage() {
   const [agentActive, setAgentActive] = useState(true);
   const [selectedTone, setSelectedTone] = useState("amigable");
@@ -86,27 +62,52 @@ export function AgentePage() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputText.trim()) return;
+    if (!agentActive) return;
+
+    setError("");
+    const messageToSend = inputText.trim();
 
     const now = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 
     setMessages((prev) => [
       ...prev,
-      { role: "user", text: inputText, time: now },
+      { role: "user", text: messageToSend, time: now },
     ]);
     setInputText("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const response = getAgentResponse(inputText);
+    try {
+      const response = await api.post<ChatResponse>(
+        "/chat/me",
+        { message: messageToSend },
+        true
+      );
+
       setIsTyping(false);
       setMessages((prev) => [
         ...prev,
-        { role: "agent", text: response, time: now },
+        { role: "agent", text: response.agent_response, time: now },
       ]);
-    }, 1200);
+    } catch (err) {
+      setIsTyping(false);
+      const message =
+        err instanceof ApiError
+          ? err.detail
+          : "No fue posible conectar con el backend del agente.";
+      setError(message);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "agent",
+          text: "No pude responder porque hay un problema de conexión con el backend. Revisa el estado del servidor e intenta de nuevo.",
+          time: now,
+        },
+      ]);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -485,6 +486,15 @@ export function AgentePage() {
 
         {/* Input */}
         <div className="p-4 pt-2">
+          {error && (
+            <div
+              className="rounded-xl px-3 py-2 mb-2"
+              style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}
+            >
+              <p style={{ fontSize: "12px", color: "#b91c1c", fontWeight: 500 }}>{error}</p>
+            </div>
+          )}
+
           <div
             className="flex items-center gap-3 rounded-2xl px-4 py-3"
             style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0" }}

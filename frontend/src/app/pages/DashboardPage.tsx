@@ -23,6 +23,8 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import { useEffect, useMemo, useState } from "react";
+import { api, ApiError, type DashboardResponse } from "../lib/api";
 
 const salesData = [
   { day: "Lun", ventas: 12400, ordenes: 8 },
@@ -144,8 +146,42 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function DashboardPage() {
+  const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const data = await api.get<DashboardResponse>("/dashboard/me", true);
+        setDashboard(data);
+      } catch (err) {
+        if (err instanceof ApiError) {
+          setError(err.detail);
+        } else {
+          setError("No fue posible cargar el dashboard desde el backend.");
+        }
+      }
+    };
+
+    run();
+  }, []);
+
+  const weeklyOrders = useMemo(
+    () => salesData.reduce((acc, item) => acc + item.ordenes, 0),
+    []
+  );
+
   return (
     <div className="space-y-6">
+      {error && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}
+        >
+          <p style={{ fontSize: "12.5px", color: "#b91c1c", fontWeight: 500 }}>{error}</p>
+        </div>
+      )}
+
       {/* Welcome banner */}
       <div
         className="rounded-2xl p-6 flex items-center justify-between"
@@ -159,10 +195,10 @@ export function DashboardPage() {
             Buenos días 👋
           </p>
           <h2 style={{ color: "#fff", fontSize: "22px", fontWeight: 700, letterSpacing: "-0.5px" }}>
-            Tienda Mi Moda
+            {dashboard?.vendor.name || "Tienda Mi Moda"}
           </h2>
           <p style={{ color: "rgba(255,255,255,0.65)", fontSize: "13px", marginTop: "4px" }}>
-            Hoy tienes 8 órdenes nuevas por atender
+            Hoy tienes {dashboard?.orders.pending_orders ?? 0} órdenes pendientes por atender
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -181,33 +217,31 @@ export function DashboardPage() {
         <MetricCard
           icon={Package}
           label="Productos activos"
-          value="1,248"
-          change="+12%"
+          value={`${dashboard?.catalog.total_products ?? 0}`}
           changeType="up"
-          subtitle="Último catálogo: hace 2 días"
+          subtitle={dashboard?.catalog.knowledge_base_ready ? "Base de conocimiento lista" : "Base de conocimiento pendiente"}
           accent="#6366f1"
         />
         <MetricCard
           icon={ShoppingCart}
           label="Órdenes este mes"
-          value="342"
-          change="+24%"
+          value={`${dashboard?.orders.total_orders ?? 0}`}
           changeType="up"
-          subtitle="108 órdenes esta semana"
+          subtitle={`${weeklyOrders} órdenes en muestra semanal`}
           accent="#10b981"
         />
         <MetricCard
           icon={Bot}
           label="Agente IA"
-          value="Activo"
-          subtitle="Respondió 89 consultas hoy"
+          value={dashboard?.settings.agent_enabled ? "Activo" : "Inactivo"}
+          subtitle={`Tono: ${dashboard?.settings.tone || "sin definir"}`}
           accent="#f59e0b"
         />
         <MetricCard
           icon={MessageCircle}
           label="WhatsApp"
-          value="Conectado"
-          subtitle="+52 1 (55) 1234-5678"
+          value={dashboard?.whatsapp.is_connected ? "Conectado" : "Desconectado"}
+          subtitle={dashboard?.whatsapp.phone_number_id || "Sin número configurado"}
           accent="#25D366"
         />
       </div>
@@ -289,7 +323,7 @@ export function DashboardPage() {
               Órdenes por día
             </h3>
             <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>
-              Esta semana: 108 pedidos
+                Esta semana: {weeklyOrders} pedidos
             </p>
           </div>
           <ResponsiveContainer width="100%" height={220}>

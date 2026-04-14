@@ -1,5 +1,6 @@
 import { Bell, Search, HelpCircle, ChevronDown } from "lucide-react";
 import { useLocation } from "react-router";
+import { getCurrentVendor } from "../../lib/auth";
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Dashboard", subtitle: "Resumen general de tu negocio" },
@@ -14,6 +15,15 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
 export function Topbar() {
   const location = useLocation();
   const pageInfo = pageTitles[location.pathname] || { title: "DropSync", subtitle: "" };
+  const vendor = getCurrentVendor();
+  const initials = vendor?.name
+    ? vendor.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "DS";
 
   return (
     <header
@@ -111,13 +121,13 @@ export function Topbar() {
               flexShrink: 0,
             }}
           >
-            <span style={{ color: "#fff", fontSize: "12px", fontWeight: 700 }}>JG</span>
+            <span style={{ color: "#fff", fontSize: "12px", fontWeight: 700 }}>{initials}</span>
           </div>
           <div>
             <p style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a", lineHeight: 1.2 }}>
-              Juan García
+              {vendor?.name || "DropSync"}
             </p>
-            <p style={{ fontSize: "11px", color: "#94a3b8" }}>Tienda Mi Moda</p>
+            <p style={{ fontSize: "11px", color: "#94a3b8" }}>{vendor?.slug || "Panel"}</p>
           </div>
           <ChevronDown size={14} style={{ color: "#94a3b8", marginLeft: "2px" }} />
         </div>

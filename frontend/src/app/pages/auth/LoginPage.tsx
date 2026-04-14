@@ -1,21 +1,45 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Eye, EyeOff, Zap, ArrowRight, Package, Bot, MessageCircle } from "lucide-react";
+import { api, ApiError, type AuthResponse } from "../../lib/api";
+import { setAuthState } from "../../lib/auth";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("demo@dropsync.io");
-  const [password, setPassword] = useState("••••••••");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const response = await api.post<AuthResponse>(
+        "/auth/login",
+        { email, password },
+        false
+      );
+
+      setAuthState({
+        accessToken: response.access_token,
+        tokenType: response.token_type,
+        vendor: response.vendor,
+      });
+
       navigate("/dashboard");
-    }, 1200);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.detail);
+      } else {
+        setError("No fue posible iniciar sesión. Revisa la conexión con el backend.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -214,6 +238,15 @@ export function LoginPage() {
             </div>
 
             {/* Submit */}
+            {error && (
+              <div
+                className="rounded-xl px-3 py-2"
+                style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}
+              >
+                <p style={{ fontSize: "12.5px", color: "#b91c1c", fontWeight: 500 }}>{error}</p>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
