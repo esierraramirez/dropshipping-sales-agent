@@ -12,18 +12,10 @@ import { ConfiguracionPage } from "./pages/ConfiguracionPage";
 
 export const router = createBrowserRouter([
   {
-    path: "/login",
-    Component: LoginPage,
-  },
-  {
-    path: "/register",
-    Component: RegisterPage,
-  },
-  {
     path: "/",
     Component: DashboardLayout,
     children: [
-      { index: true, Component: () => <Navigate to="/dashboard" replace /> },
+      { index: true, Component: () => <Navigate to="/login" replace /> },
       { path: "dashboard", Component: DashboardPage },
       { path: "empresa", Component: EmpresaPage },
       { path: "catalogo", Component: CatalogoPage },
@@ -32,5 +24,13 @@ export const router = createBrowserRouter([
       { path: "whatsapp", Component: WhatsAppPage },
       { path: "configuracion", Component: ConfiguracionPage },
     ],
+  },
+  {
+    path: "/login",
+    Component: LoginPage,
+  },
+  {
+    path: "/register",
+    Component: RegisterPage,
   },
 ]);
