@@ -9,9 +9,11 @@ def process_chat_message(
     vendor: Vendor,
     message: str
 ) -> dict:
+    # top_k=2 para optimizar tokens (vs 3)
+    # Solo recupera los 2 productos más relevantes para ahorrar contexto
     return generate_agent_reply(
         db=db,
         vendor=vendor,
         user_message=message,
-        top_k=3
+        top_k=2  # Reducido de 3 para ahorrar tokens
     )

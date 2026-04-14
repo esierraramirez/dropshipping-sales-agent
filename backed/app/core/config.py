@@ -18,8 +18,16 @@ class Settings(BaseModel):
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
+    # OpenAI Configuration - Optimizado para bajo costo y baja latencia
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-5.3-chat-latest")
+    # Modelos disponibles: gpt-5.4-nano (más económico, recomendado)
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-5.4-nano")
+    
+    # Límites de tokens para optimizar costos
+    OPENAI_MAX_INPUT_TOKENS: int = int(os.getenv("OPENAI_MAX_INPUT_TOKENS", "1000"))  # Limita el contexto de entrada
+    OPENAI_MAX_OUTPUT_TOKENS: int = int(os.getenv("OPENAI_MAX_OUTPUT_TOKENS", "300"))  # Respuestas concisas
+    OPENAI_VERBOSITY: str = os.getenv("OPENAI_VERBOSITY", "low")  # "low", "medium", "high"
+    OPENAI_REASONING_EFFORT: str = os.getenv("OPENAI_REASONING_EFFORT", "none")  # "none", "low"
     WHATSAPP_API_VERSION: str = os.getenv("WHATSAPP_API_VERSION", "v23.0")
 
 
