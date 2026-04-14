@@ -1,0 +1,6 @@
+﻿product_id,name,category,price,currency,stock_status,min_shipping_days,max_shipping_days,short_description,full_description,brand,size,colors,launch_year,sku,shipping_cost,shipping_regions,returns_policy,warranty_policy,specs,variants,source
+1,Camiseta Roja Premium,Fashion,25.0,USD,in_stock,1,7,,,,,,,,,,,,,,
+2,Pantalón Negro Casual,Fashion,45.0,USD,in_stock,1,7,,,,,,,,,,,,,,
+3,Gorro Deportivo,Accesorios,15.0,USD,out_of_stock,1,7,,,,,,,,,,,,,,
+4,Zapatillas Running,Calzado,85.0,USD,in_stock,1,7,,,,,,,,,,,,,,
+5,Sudadera Azul,Fashion,35.0,USD,in_stock,1,7,,,,,,,,,,,,,,
