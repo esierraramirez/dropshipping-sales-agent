@@ -17,7 +17,7 @@ class Product(Base):
     category: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     price: Mapped[float] = mapped_column(Float, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), nullable=False)
-    stock_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    stock_status: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, default="disponible")
 
     min_shipping_days: Mapped[int] = mapped_column(Integer, nullable=False)
     max_shipping_days: Mapped[int] = mapped_column(Integer, nullable=False)

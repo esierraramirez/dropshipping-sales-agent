@@ -35,38 +35,15 @@ _tables_initialized = False
 def get_db():
     global _tables_initialized
     
-    # Crear tablas una sola vez en el primer acceso
+    # Crear tablas una sola vez en el primer acceso (SIN eliminar datos existentes)
     if not _tables_initialized:
         try:
-            # Para PostgreSQL: ejecutar DROP CASCADE para limpiar vistas y dependencias
-            if "postgresql" in settings.DATABASE_URL:
-                from sqlalchemy import text
-                with engine.connect() as conn:
-                    # Listar todas las vistas y tablas y eliminarlas con CASCADE
-                    drop_views_sql = """
-                    DROP VIEW IF EXISTS dashboard_overview CASCADE;
-                    DROP TABLE IF EXISTS whatsapp_connections CASCADE;
-                    DROP TABLE IF EXISTS conversations CASCADE;
-                    DROP TABLE IF EXISTS knowledge_base CASCADE;
-                    DROP TABLE IF EXISTS orders CASCADE;
-                    DROP TABLE IF EXISTS products CASCADE;
-                    DROP TABLE IF EXISTS vendor_settings CASCADE;
-                    DROP TABLE IF EXISTS whatsapp_connections CASCADE;
-                    DROP TABLE IF EXISTS vendors CASCADE;
-                    """
-                    conn.execute(text(drop_views_sql))
-                    conn.commit()
-                    print("🔄 Vistas y tablas eliminadas")
-            else:
-                Base.metadata.drop_all(bind=engine)
-                print("🔄 Tablas eliminadas")
-            
-            # Luego crear las tablas con el esquema correcto
+            # Crear todas las tablas si no existen (NO ELIMINAR NUNCA)
             Base.metadata.create_all(bind=engine)
             _tables_initialized = True
-            print("✅ Tablas recreadas/verificadas en Supabase")
+            print("✅ Tablas creadas/verificadas en Supabase (datos preservados)")
         except Exception as e:
-            print(f"⚠️  Error al recrear tablas: {type(e).__name__}: {e}")
+            print(f"⚠️  Error al crear tablas: {type(e).__name__}: {e}")
             # Marcar como inicializado anyway para no intentar de nuevo
             _tables_initialized = True
     

@@ -97,6 +97,10 @@ export function CatalogoPage() {
   const [totalProducts, setTotalProducts] = useState(fallbackProducts.length);
   const [error, setError] = useState("");
   const [uploadSummary, setUploadSummary] = useState("");
+  const [editingProduct, setEditingProduct] = useState<UiProduct | null>(null);
+  const [editFormData, setEditFormData] = useState({ nombre: "", precio: 0, categoria: "", estado: "activo" });
+  const [confirmDelete, setConfirmDelete] = useState<{ productId: number; productName: string } | null>(null);
+  const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const loadProducts = async () => {
@@ -120,6 +124,76 @@ export function CatalogoPage() {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  const handleDeleteProduct = async (productId: number, productName: string) => {
+    setConfirmDelete({ productId, productName });
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!confirmDelete) return;
+    
+    setDeletingProductId(confirmDelete.productId);
+    try {
+      setError("");
+      await api.delete(`/catalog/products/${confirmDelete.productId}`, true);
+      setProducts(products.filter(p => p.id !== confirmDelete.productId));
+      setTotalProducts(totalProducts - 1);
+      setUploadSummary(`Producto "${confirmDelete.productName}" eliminado correctamente.`);
+      setConfirmDelete(null);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.detail);
+      } else {
+        setError("No fue posible eliminar el producto.");
+      }
+    } finally {
+      setDeletingProductId(null);
+    }
+  };
+
+  const handleOpenEdit = (product: UiProduct) => {
+    setEditingProduct(product);
+    setEditFormData({
+      nombre: product.nombre,
+      precio: product.precio,
+      categoria: product.categoria,
+      estado: product.estado,
+    });
+  };
+
+  const handleCloseEdit = () => {
+    setEditingProduct(null);
+    setEditFormData({ nombre: "", precio: 0, categoria: "", estado: "activo" });
+  };
+
+  const handleSaveProduct = async () => {
+    if (!editingProduct) return;
+
+    try {
+      setError("");
+      await api.patch(`/catalog/products/${editingProduct.id}`, {
+        name: editFormData.nombre,
+        price: editFormData.precio,
+        category: editFormData.categoria,
+        stock_status: editFormData.estado,
+      }, true);
+
+      const updatedProducts = products.map(p => 
+        p.id === editingProduct.id 
+          ? { ...p, nombre: editFormData.nombre, precio: editFormData.precio, categoria: editFormData.categoria, estado: editFormData.estado as any }
+          : p
+      );
+      setProducts(updatedProducts);
+      setUploadSummary(`Producto "${editFormData.nombre}" actualizado correctamente.`);
+      handleCloseEdit();
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.detail);
+      } else {
+        setError("No fue posible actualizar el producto.");
+      }
+    }
+  };
 
   const categories = ["Todas", "Vestidos", "Blusas", "Pantalones", "Calzado", "Accesorios", "Faldas", "Sudaderas"];
 
@@ -149,12 +223,22 @@ export function CatalogoPage() {
       await api.post("/catalog/normalize/me", {}, true);
       setUploadProgress(75);
       await api.post("/catalog/save/me", {}, true);
-      setUploadProgress(95);
+      setUploadProgress(85);
+      
+      // Construir la base de conocimiento automáticamente
+      try {
+        await api.post("/catalog/build-knowledge-base/me", {}, true);
+        setUploadProgress(95);
+      } catch (kbErr) {
+        console.warn("Advertencia: No se pudo construir la base de conocimiento:", kbErr);
+        // Continuar de todos modos
+      }
+      
       const currentTotal = await loadProducts();
       setUploadProgress(100);
       setUploadSummary(
         currentTotal !== null
-          ? `Catálogo sincronizado. Total actual: ${currentTotal} productos.`
+          ? `Catálogo sincronizado. Total actual: ${currentTotal} productos. Base de conocimiento construida.`
           : "La importación finalizó y los productos se sincronizaron."
       );
       setUploadState("success");
@@ -493,20 +577,26 @@ export function CatalogoPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <button
-                          className="rounded-lg p-1.5 transition-all"
+                          className="rounded-lg p-1.5 transition-all hover:bg-gray-100"
                           style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer" }}
+                          onClick={() => handleOpenEdit(product)}
+                          title="Ver detalles"
                         >
                           <Eye size={14} />
                         </button>
                         <button
-                          className="rounded-lg p-1.5 transition-all"
+                          className="rounded-lg p-1.5 transition-all hover:bg-gray-100"
                           style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer" }}
+                          onClick={() => handleOpenEdit(product)}
+                          title="Editar producto"
                         >
                           <Edit3 size={14} />
                         </button>
                         <button
-                          className="rounded-lg p-1.5 transition-all"
+                          className="rounded-lg p-1.5 transition-all hover:bg-red-100"
                           style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer" }}
+                          onClick={() => handleDeleteProduct(product.id, product.nombre)}
+                          title="Eliminar producto"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -553,6 +643,250 @@ export function CatalogoPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Edición */}
+      {editingProduct && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+          }}
+          onClick={handleCloseEdit}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "24px",
+              width: "90%",
+              maxWidth: "500px",
+              boxShadow: "0 20px 25px rgba(0, 0, 0, 0.15)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px", color: "#1e293b" }}>
+              Editar producto
+            </h3>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 500, marginBottom: "6px", color: "#64748b" }}>
+                Nombre
+              </label>
+              <input
+                type="text"
+                value={editFormData.nombre}
+                onChange={(e) => setEditFormData({ ...editFormData, nombre: e.target.value })}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 500, marginBottom: "6px", color: "#64748b" }}>
+                Precio
+              </label>
+              <input
+                type="number"
+                value={editFormData.precio}
+                onChange={(e) => setEditFormData({ ...editFormData, precio: parseFloat(e.target.value) })}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 500, marginBottom: "6px", color: "#64748b" }}>
+                Categoría
+              </label>
+              <select
+                value={editFormData.categoria}
+                onChange={(e) => setEditFormData({ ...editFormData, categoria: e.target.value })}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  boxSizing: "border-box",
+                }}
+              >
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 500, marginBottom: "6px", color: "#64748b" }}>
+                Estado
+              </label>
+              <select
+                value={editFormData.estado}
+                onChange={(e) => setEditFormData({ ...editFormData, estado: e.target.value as any })}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <option value="activo">Activo</option>
+                <option value="bajo_stock">Bajo stock</option>
+                <option value="sin_stock">Sin stock</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                onClick={handleCloseEdit}
+                style={{
+                  padding: "8px 16px",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "6px",
+                  background: "white",
+                  color: "#64748b",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveProduct}
+                style={{
+                  padding: "8px 16px",
+                  border: "none",
+                  borderRadius: "6px",
+                  background: "#6366f1",
+                  color: "white",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+              >
+                Guardar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Eliminación */}
+      {confirmDelete && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+          }}
+          onClick={() => setConfirmDelete(null)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "32px",
+              width: "90%",
+              maxWidth: "420px",
+              boxShadow: "0 25px 50px rgba(0, 0, 0, 0.2)",
+              textAlign: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icono de advertencia */}
+            <div
+              style={{
+                width: "60px",
+                height: "60px",
+                borderRadius: "50%",
+                background: "rgba(239, 68, 68, 0.1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 20px",
+                fontSize: "28px",
+              }}
+            >
+              ⚠️
+            </div>
+
+            <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "8px", color: "#1e293b" }}>
+              ¿Eliminar producto?
+            </h3>
+
+            <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "24px", lineHeight: "1.5" }}>
+              Está a punto de eliminar <strong>"{confirmDelete.productName}"</strong>. Esta acción no puede ser deshecha.
+            </p>
+
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button
+                onClick={() => setConfirmDelete(null)}
+                disabled={deletingProductId === confirmDelete.productId}
+                style={{
+                  padding: "10px 24px",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  background: "white",
+                  color: "#64748b",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: deletingProductId === confirmDelete.productId ? "not-allowed" : "pointer",
+                  opacity: deletingProductId === confirmDelete.productId ? 0.5 : 1,
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDeleteProduct}
+                disabled={deletingProductId === confirmDelete.productId}
+                style={{
+                  padding: "10px 24px",
+                  border: "none",
+                  borderRadius: "8px",
+                  background: deletingProductId === confirmDelete.productId ? "#fca5a5" : "#ef4444",
+                  color: "white",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: deletingProductId === confirmDelete.productId ? "not-allowed" : "pointer",
+                  opacity: deletingProductId === confirmDelete.productId ? 0.7 : 1,
+                }}
+              >
+                {deletingProductId === confirmDelete.productId ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

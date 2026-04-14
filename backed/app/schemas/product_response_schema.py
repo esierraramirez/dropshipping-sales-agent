@@ -10,7 +10,7 @@ class ProductResponse(BaseModel):
     category: str
     price: float
     currency: str
-    stock_status: str
+    stock_status: Optional[str] = None
     min_shipping_days: int
     max_shipping_days: int
     short_description: Optional[str] = None

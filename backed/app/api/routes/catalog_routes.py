@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Depends
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.infrastructure.db.session import get_db
@@ -18,6 +18,7 @@ from app.services.catalog_service import (
     build_authenticated_vendor_knowledge_base,
     get_authenticated_vendor_knowledge_base_info,
 )
+from app.models.product import Product
 
 router = APIRouter()
 
@@ -51,6 +52,92 @@ def get_my_products(
     current_vendor: Vendor = Depends(get_current_vendor),
 ):
     return list_authenticated_vendor_products(db=db, vendor=current_vendor)
+
+
+@router.get("/catalog/products/{product_id}")
+def get_product_detail(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor),
+):
+    product = db.query(Product).filter(
+        Product.id == product_id,
+        Product.vendor_id == current_vendor.id
+    ).first()
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    return {
+        "id": product.id,
+        "vendor_id": product.vendor_id,
+        "product_id": product.product_id,
+        "name": product.name,
+        "category": product.category,
+        "price": float(product.price),
+        "currency": product.currency,
+        "stock_status": product.stock_status,
+    }
+
+
+@router.patch("/catalog/products/{product_id}")
+def update_product(
+    product_id: int,
+    updates: dict,
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor),
+):
+    product = db.query(Product).filter(
+        Product.id == product_id,
+        Product.vendor_id == current_vendor.id
+    ).first()
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    # Actualizar solo los campos permitidos
+    allowed_fields = {"name", "price", "stock_status", "category"}
+    for field, value in updates.items():
+        if field in allowed_fields and value is not None:
+            setattr(product, field, value)
+    
+    db.commit()
+    db.refresh(product)
+    
+    return {
+        "message": "Producto actualizado correctamente",
+        "product": {
+            "id": product.id,
+            "product_id": product.product_id,
+            "name": product.name,
+            "price": float(product.price),
+            "stock_status": product.stock_status,
+        }
+    }
+
+
+@router.delete("/catalog/products/{product_id}")
+def delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor),
+):
+    product = db.query(Product).filter(
+        Product.id == product_id,
+        Product.vendor_id == current_vendor.id
+    ).first()
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    product_name = product.name
+    db.delete(product)
+    db.commit()
+    
+    return {
+        "message": f"Producto '{product_name}' eliminado correctamente",
+        "product_id": product_id
+    }
 
 
 @router.post("/catalog/build-knowledge-base/me", response_model=KnowledgeBaseBuildResponse)

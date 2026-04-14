@@ -61,22 +61,34 @@ def process_catalog_upload(file: UploadFile, vendor_name: str) -> dict:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"No fue posible leer el archivo Excel: {str(e)}")
 
-    df.columns = normalize_column_names(list(df.columns))
+    # Normalizar nombres de columnas
+    original_columns = list(df.columns)
+    df.columns = normalize_column_names(original_columns)
     detected_columns = list(df.columns)
 
-    missing_columns = validate_required_columns(detected_columns)
+    # Validar columnas requeridas
+    validation = validate_required_columns(detected_columns)
+    
+    # Agregar columnas faltantes con valores por defecto
+    from app.infrastructure.excel.importer import OPTIONAL_COLUMNS
+    for col, default_val in OPTIONAL_COLUMNS.items():
+        if col not in df.columns:
+            df[col] = default_val
+    
     preview_rows = dataframe_preview(df, limit=10)
 
     return {
-        "message": "Catálogo cargado y analizado correctamente.",
+        "message": "Catálogo cargado y analizado correctamente." if validation["is_valid"] else validation["message"],
         "vendor_name": vendor_name,
         "original_filename": file.filename,
         "saved_path": saved_path,
         "detected_columns": detected_columns,
-        "missing_required_columns": missing_columns,
+        "original_columns": original_columns,
+        "missing_required_columns": validation["missing"],
+        "validation_details": validation,
         "preview_rows": preview_rows,
         "total_rows": len(df),
-        "is_valid": len(missing_columns) == 0,
+        "is_valid": validation["is_valid"],
     }
 
 
@@ -103,14 +115,21 @@ def normalize_catalog_for_vendor(vendor_name: str) -> dict:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"No fue posible leer el archivo Excel: {str(e)}")
 
+    # Normalizar nombres de columnas y mapear español/inglés
     df.columns = normalize_column_names(list(df.columns))
-    missing_columns = validate_required_columns(list(df.columns))
+    validation = validate_required_columns(list(df.columns))
 
-    if missing_columns:
+    if not validation["is_valid"]:
         raise HTTPException(
             status_code=400,
-            detail=f"No es posible normalizar. Faltan columnas obligatorias: {missing_columns}"
+            detail=f"No es posible normalizar. Faltan columnas obligatorias: {validation['missing']}"
         )
+
+    # Agregar columnas opcionales con valores por defecto si no existen
+    from app.infrastructure.excel.importer import OPTIONAL_COLUMNS
+    for col, default_val in OPTIONAL_COLUMNS.items():
+        if col not in df.columns:
+            df[col] = default_val
 
     normalized_df, quality_report = normalize_dataframe(df)
 
