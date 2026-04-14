@@ -34,11 +34,12 @@ function FormField({
 }: {
   label: string;
   value: string | null;
-  onChange: (v: string) => void;
+  onChange?: (v: string) => void;
   type?: string;
   placeholder?: string;
   editing: boolean;
 }) {
+  const handleChange = onChange || (() => {});
   return (
     <div>
       <label className="block mb-1.5" style={{ fontSize: "12.5px", fontWeight: 600, color: "#475569" }}>
@@ -48,7 +49,7 @@ function FormField({
         <input
           type={type}
           value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           placeholder={placeholder}
           className="w-full rounded-xl px-4 py-2.5 outline-none transition-all"
           style={{
@@ -79,7 +80,21 @@ export function EmpresaPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const [editData, setEditData] = useState<Partial<VendorData>>({});
+  const [editData, setEditData] = useState<VendorData>({
+    id: 0,
+    name: "",
+    email: "",
+    rfc: null,
+    sector: null,
+    phone: null,
+    website: null,
+    address: null,
+    city: null,
+    state: null,
+    country: null,
+    postal_code: null,
+    description: null,
+  });
 
   // Cargar datos al montar
   useEffect(() => {
@@ -227,9 +242,9 @@ export function EmpresaPage() {
           </div>
           <div className="ml-auto flex gap-3">
             {[
-              { label: "Productos", value: stats?.total_products ?? "0" },
-              { label: "Órdenes", value: stats?.total_orders ?? "0" },
-              { label: "Clientes", value: stats?.total_customers ?? "0" },
+              { label: "Productos", value: String(stats?.total_products ?? 0) },
+              { label: "Órdenes", value: String(stats?.total_orders ?? 0) },
+              { label: "Clientes", value: String(stats?.total_customers ?? 0) },
             ].map(({ label, value }) => (
               <div key={label} className="text-center px-4 py-2 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #f1f5f9" }}>
                 <p style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>{value}</p>
@@ -254,7 +269,7 @@ export function EmpresaPage() {
           <div className="space-y-3">
             <FormField 
               label="Nombre de empresa" 
-              value={editData.name || ""} 
+              value={editData.name} 
               onChange={(v) => updateEditField("name", v)} 
               editing={editing} 
               placeholder="Nombre de empresa"
