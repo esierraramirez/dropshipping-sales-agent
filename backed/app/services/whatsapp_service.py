@@ -37,6 +37,7 @@ def upsert_whatsapp_connection(
 ) -> WhatsAppConnection:
     connection = get_or_create_whatsapp_connection(db=db, vendor=vendor)
 
+    connection.phone_number = payload.phone_number
     connection.phone_number_id = payload.phone_number_id
     connection.business_account_id = payload.business_account_id
     connection.access_token = payload.access_token

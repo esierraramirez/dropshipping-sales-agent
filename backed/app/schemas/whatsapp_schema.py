@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 
 
 class WhatsAppConnectionRequest(BaseModel):
+    phone_number: Optional[str] = Field(default=None, max_length=20)  # Número formateado +52 1 55...
     phone_number_id: str = Field(..., min_length=1, max_length=150)
     business_account_id: Optional[str] = Field(default=None, max_length=150)
     access_token: str = Field(..., min_length=10)
@@ -11,6 +12,7 @@ class WhatsAppConnectionRequest(BaseModel):
 
 class WhatsAppConnectionResponse(BaseModel):
     vendor_id: int
+    phone_number: Optional[str] = None
     phone_number_id: Optional[str] = None
     business_account_id: Optional[str] = None
     is_connected: bool

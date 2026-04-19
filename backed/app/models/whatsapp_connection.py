@@ -13,6 +13,7 @@ class WhatsAppConnection(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     vendor_id: Mapped[int] = mapped_column(ForeignKey("vendors.id"), unique=True, nullable=False)
 
+    phone_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # Número formateado: +52 1 55...
     phone_number_id: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
     business_account_id: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
     access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

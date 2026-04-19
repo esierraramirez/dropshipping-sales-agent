@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   MessageCircle,
   Shield,
@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Info,
 } from "lucide-react";
+import { api, ApiError } from "../lib/api";
 
 const mockMessages = [
   { from: "María López", phone: "+52 55 1234 5678", text: "Hola! ¿Tienen el vestido en talla M?", time: "10:32", avatar: "ML" },
@@ -31,17 +32,53 @@ const stats = [
 ];
 
 export function WhatsAppPage() {
-  const [connected, setConnected] = useState(true);
+  const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [form, setForm] = useState({
-    phoneNumber: "+52 1 (55) 1234-5678",
-    accessToken: "EAABxxxxxxxxxxxxxxxx",
-    phoneNumberId: "1234567890",
-    businessAccountId: "0987654321",
-    webhookToken: "mi_token_secreto_123",
+    phoneNumber: "",
+    accessToken: "",
+    phoneNumberId: "",
+    businessAccountId: "",
+    webhookToken: "",
   });
   const [activeTab, setActiveTab] = useState<"conexion" | "mensajes" | "plantillas">("conexion");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Cargar credenciales guardadas al montar el componente
+  useEffect(() => {
+    const loadWhatsAppConnection = async () => {
+      try {
+        setLoading(true);
+        const data = await api.get(
+          "/whatsapp/me",
+          true
+        );
+        
+        if (data.is_connected) {
+          setConnected(true);
+          setForm({
+            phoneNumber: data.phone_number || "",
+            accessToken: data.access_token || "",
+            phoneNumberId: data.phone_number_id || "",
+            businessAccountId: data.business_account_id || "",
+            webhookToken: data.verify_token || "",
+          });
+        }
+      } catch (err) {
+        // No hay conexión guardada aún, es normal
+        if (err instanceof ApiError && err.status !== 404) {
+          setError("No se pudo cargar la configuración de WhatsApp");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWhatsAppConnection();
+  }, []);
 
   const handleCopy = (field: string, value: string) => {
     navigator.clipboard.writeText(value).catch(() => {});    
@@ -49,20 +86,127 @@ export function WhatsAppPage() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
+    // Validar campos requeridos
+    if (!form.phoneNumberId.trim()) {
+      setError("El Phone Number ID es requerido");
+      return;
+    }
+    if (!form.accessToken.trim()) {
+      setError("El Access Token es requerido");
+      return;
+    }
+    if (!form.webhookToken.trim()) {
+      setError("El Webhook Verify Token es requerido");
+      return;
+    }
+
     setConnecting(true);
-    setTimeout(() => {
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await api.put(
+        "/whatsapp/me",
+        {
+          phone_number: form.phoneNumber || null,
+          phone_number_id: form.phoneNumberId,
+          business_account_id: form.businessAccountId || null,
+          access_token: form.accessToken,
+          verify_token: form.webhookToken,
+        },
+        true
+      );
+
+      if (response.is_connected) {
+        setConnected(true);
+        setSuccess("✅ Conexión de WhatsApp guardada exitosamente");
+        setTimeout(() => setSuccess(""), 3000);
+      }
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.detail
+          : "Error al guardar la configuración";
+      setError(message);
+    } finally {
       setConnecting(false);
-      setConnected(true);
-    }, 2000);
+    }
   };
 
-  const handleDisconnect = () => {
-    setConnected(false);
+  const handleDisconnect = async () => {
+    setConnecting(true);
+    setError("");
+
+    try {
+      // Actualizar is_connected a false
+      await api.put(
+        "/whatsapp/me",
+        {
+          phone_number: form.phoneNumber || null,
+          phone_number_id: form.phoneNumberId,
+          business_account_id: form.businessAccountId || null,
+          access_token: form.accessToken,
+          verify_token: form.webhookToken,
+          is_connected: false,
+        },
+        true
+      );
+      setConnected(false);
+      setSuccess("Desconexión exitosa");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.detail
+          : "Error al desconectar";
+      setError(message);
+    } finally {
+      setConnecting(false);
+    }
   };
 
   return (
     <div className="space-y-5 max-w-5xl">
+      {/* Loading state */}
+      {loading && (
+        <div
+          className="rounded-2xl p-4 flex items-center gap-3"
+          style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}
+        >
+          <RefreshCw size={16} style={{ color: "#6366f1", animation: "spin 1s linear infinite" }} />
+          <span style={{ fontSize: "13px", color: "#6366f1", fontWeight: 500 }}>
+            Cargando configuración de WhatsApp...
+          </span>
+        </div>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <div
+          className="rounded-2xl p-4 flex items-center gap-3"
+          style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}
+        >
+          <AlertCircle size={16} style={{ color: "#ef4444" }} />
+          <span style={{ fontSize: "13px", color: "#b91c1c", fontWeight: 500 }}>
+            {error}
+          </span>
+        </div>
+      )}
+
+      {/* Success message */}
+      {success && (
+        <div
+          className="rounded-2xl p-4 flex items-center gap-3"
+          style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}
+        >
+          <CheckCircle2 size={16} style={{ color: "#10b981" }} />
+          <span style={{ fontSize: "13px", color: "#047857", fontWeight: 500 }}>
+            {success}
+          </span>
+        </div>
+      )}
+
       {/* Status banner */}
       <div
         className="rounded-2xl p-5 flex items-center gap-4"
@@ -248,11 +392,28 @@ export function WhatsAppPage() {
 
             <button
               onClick={handleConnect}
+              disabled={connecting}
               className="mt-5 w-full flex items-center justify-center gap-2 rounded-xl py-3"
-              style={{ background: "#25D366", color: "#fff", border: "none", fontSize: "13.5px", fontWeight: 600, cursor: "pointer" }}
+              style={{
+                background: connecting ? "#e2e8f0" : "#25D366",
+                color: connecting ? "#94a3b8" : "#fff",
+                border: "none",
+                fontSize: "13.5px",
+                fontWeight: 600,
+                cursor: connecting ? "not-allowed" : "pointer",
+              }}
             >
-              <CheckCircle2 size={16} />
-              Guardar y verificar conexión
+              {connecting ? (
+                <>
+                  <RefreshCw size={16} className="animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={16} />
+                  Guardar y verificar conexión
+                </>
+              )}
             </button>
           </div>
 
