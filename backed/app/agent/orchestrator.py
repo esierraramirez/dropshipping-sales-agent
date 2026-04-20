@@ -74,10 +74,16 @@ def _create_order_from_response(
     Intenta crear una orden si el contexto está completo y el cliente confirmó.
     """
     if not purchase_context:
+        print("  └─ No hay purchase_context")
         return None
     
     # Verifica que tenga datos del cliente
-    if not purchase_context.customer_name or not purchase_context.customer_phone:
+    if not purchase_context.customer_name:
+        print(f"  └─ Sin nombre del cliente")
+        return None
+    
+    if not purchase_context.customer_phone:
+        print(f"  └─ Sin teléfono del cliente")
         return None
     
     # Verifica que el agente haya confirmado la orden
@@ -90,10 +96,20 @@ def _create_order_from_response(
         "¡excelente!",
         "perfecto, hemos registrado",
         "hemos registrado tu orden",
+        "tu orden quedó lista",
+        "orden lista",
     ]
     
     response_lower = agent_response.lower()
-    if not any(kw in response_lower for kw in confirm_keywords):
+    found_keyword = False
+    for kw in confirm_keywords:
+        if kw in response_lower:
+            found_keyword = True
+            print(f"  └─ Palabra clave de confirmación encontrada: '{kw}'")
+            break
+    
+    if not found_keyword:
+        print(f"  └─ No se encontró palabra clave de confirmación en: {agent_response[:100]}")
         return None
     
     # Si hay items, úsalos. Si no, crea un item genérico con el resumen de la conversación
@@ -111,10 +127,7 @@ def _create_order_from_response(
         ]
     else:
         # Crea un item genérico con resumen de la orden
-        # El resumen viene del texto del agente
         summary_text = "Compra realizada desde chat del agente"
-        
-        # Intenta extraer montos de la respuesta del agente
         total = purchase_context.total_amount or 0.0
         
         items_data = [
@@ -138,9 +151,12 @@ def _create_order_from_response(
             conversation_summary="Creada desde chat del agente"
         )
         
+        print(f"  └─ ✅ Orden creada exitosamente, ID: {order.get('id')}")
         return order
     except Exception as e:
-        print(f"Error al crear orden: {str(e)}")
+        print(f"  └─ ❌ Error al crear orden: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
@@ -218,15 +234,29 @@ def generate_agent_reply(
         if isinstance(purchase_context, dict):
             try:
                 pc_obj = PurchaseContext(**purchase_context)
-            except Exception:
+            except Exception as e:
+                print(f"Error al convertir purchase_context: {e}")
                 pc_obj = None
         else:
             pc_obj = purchase_context
 
     # Crear orden si es apropiado
+    # IMPORTANTE: Crear orden si el AGENTE confirmó (no si el usuario pidió)
     order_created = None
-    if pc_obj and _detect_purchase_keywords(user_message):
+    if pc_obj:
+        print(f"🔍 [ORDEN] Verificando creación de orden:")
+        print(f"   - purchase_context existe: ✓")
+        print(f"   - customer_name: {pc_obj.customer_name}")
+        print(f"   - customer_phone: {pc_obj.customer_phone}")
+        print(f"   - agent_reply contiene 'registr': {'registr' in agent_reply.lower()}")
+        
+        # Intenta crear orden si el agente confirmó
         order_created = _create_order_from_response(db, vendor, agent_reply, pc_obj)
+        
+        if order_created:
+            print(f"✅ [ORDEN] Orden creada: {order_created}")
+        else:
+            print(f"❌ [ORDEN] No se pudo crear orden")
 
     response = {
         "vendor_name": vendor.name,
