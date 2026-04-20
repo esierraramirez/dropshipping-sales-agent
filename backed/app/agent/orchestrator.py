@@ -80,10 +80,6 @@ def _create_order_from_response(
     if not purchase_context.customer_name or not purchase_context.customer_phone:
         return None
     
-    # Verifica que haya items
-    if not purchase_context.items or len(purchase_context.items) == 0:
-        return None
-    
     # Verifica que el agente haya confirmado la orden
     confirm_keywords = [
         "registré tu orden",
@@ -92,14 +88,18 @@ def _create_order_from_response(
         "procesará tu orden",
         "gracias por comprar",
         "¡excelente!",
+        "perfecto, hemos registrado",
+        "hemos registrado tu orden",
     ]
     
     response_lower = agent_response.lower()
     if not any(kw in response_lower for kw in confirm_keywords):
         return None
     
-    # Crea la orden
-    try:
+    # Si hay items, úsalos. Si no, crea un item genérico con el resumen de la conversación
+    items_data = []
+    
+    if purchase_context.items and len(purchase_context.items) > 0:
         items_data = [
             {
                 "product_id": item.product_id,
@@ -109,7 +109,25 @@ def _create_order_from_response(
             }
             for item in purchase_context.items
         ]
+    else:
+        # Crea un item genérico con resumen de la orden
+        # El resumen viene del texto del agente
+        summary_text = "Compra realizada desde chat del agente"
         
+        # Intenta extraer montos de la respuesta del agente
+        total = purchase_context.total_amount or 0.0
+        
+        items_data = [
+            {
+                "product_id": "chat_order",
+                "product_name": f"Compra en línea - {summary_text}",
+                "quantity": 1,
+                "unit_price": total if total > 0 else 0,
+            }
+        ]
+    
+    # Crea la orden
+    try:
         order = create_order_from_chat(
             db=db,
             vendor=vendor,
@@ -220,5 +238,9 @@ def generate_agent_reply(
     
     if order_created:
         response["order_created"] = order_created
+    
+    # Retorna el contexto de compra actualizado
+    if pc_obj:
+        response["purchase_context"] = pc_obj.model_dump()
     
     return response

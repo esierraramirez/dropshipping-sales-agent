@@ -60,7 +60,9 @@ const getInitialMessages = (vendorName: string): Message[] => [
 
 export function AgentePage() {
   const STORAGE_KEY = "agent_chat_messages";
+  const VENDOR_NAME_KEY = "agent_vendor_name";
   const [vendorName, setVendorName] = useState("Tu Empresa");
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   // Cargar nombre de la empresa
   const navigate = useNavigate();
@@ -71,6 +73,7 @@ export function AgentePage() {
         const response = await api.get<{ name: string }>("/empresa/me", true);
         if (response.name) {
           setVendorName(response.name);
+          localStorage.setItem(VENDOR_NAME_KEY, response.name);
         }
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
@@ -84,17 +87,6 @@ export function AgentePage() {
     };
     loadVendorName();
   }, [navigate]);
-
-  // Actualizar mensaje inicial cuando vendorName cambia por primera vez
-  useEffect(() => {
-    if (vendorName !== "Tu Empresa" && messages.length === 1 && messages[0].role === "agent") {
-      // Solo actualizar si es el primer mensaje y aún dice "Tu Empresa"
-      if (messages[0].text.includes("Tu Empresa")) {
-        const newMessages = getInitialMessages(vendorName);
-        setMessages(newMessages);
-      }
-    }
-  }, [vendorName]);
 
   // Función para convertir markdown simple a HTML
   const processMarkdown = (text: string) => {
@@ -133,11 +125,17 @@ export function AgentePage() {
       if (stored && stored !== '[]') {
         return JSON.parse(stored);
       }
-      return getInitialMessages(vendorName);
+      // Usa el nombre guardado o default
+      const savedVendor = localStorage.getItem(VENDOR_NAME_KEY) || "Tu Empresa";
+      return getInitialMessages(savedVendor);
     } catch {
-      return getInitialMessages(vendorName);
+      const savedVendor = localStorage.getItem(VENDOR_NAME_KEY) || "Tu Empresa";
+      return getInitialMessages(savedVendor);
     }
   });
+
+  // Contexto de compra para enviar al backend
+  const [purchaseContext, setPurchaseContext] = useState<any>(null);
 
   // Persist messages to localStorage whenever they change
   useEffect(() => {
@@ -151,12 +149,70 @@ export function AgentePage() {
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState("");
 
+  // Funciones para extraer datos del mensaje del usuario
+  const extractCustomerName = (text: string): string | null => {
+    // Busca patrones como "mi nombre es Juan", "me llamo Juan", "soy Juan"
+    const patterns = [
+      /(?:mi nombre es|me llamo|soy)\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)?)/i,
+      /^([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)?)\s*$/i, // Si es solo un nombre
+    ];
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+    return null;
+  };
+
+  const extractPhoneNumber = (text: string): string | null => {
+    // Busca números de teléfono colombianos (10 dígitos)
+    const phonePattern = /(?:cel|celular|teléfono|número|whatsapp|móvil)?\s*(?:es|:|\s)?\s*(\+?57|0)?\s*?(\d{10}|\d{9,}\s*\d{3,})/i;
+    const match = text.match(phonePattern);
+    if (match && match[2]) {
+      const phone = match[2].replace(/\s/g, "");
+      return phone;
+    }
+    return null;
+  };
+
+  const extractAddress = (text: string): string | null => {
+    // Si el mensaje contiene direcciones comunes de Colombia
+    const addressPatterns = [
+      /(?:dirección|dir|envíame a|a)\s*[:\s]+(.+?)(?:\.|,|$)/i,
+      /^(.+?(?:calle|carrera|avenida|diagonal|transversal|pasaje|plaza|apto|apt|piso|casa|local).+?)$/i,
+    ];
+    for (const pattern of addressPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+    return null;
+  };
+
+  const updatePurchaseContext = (userMessage: string) => {
+    const name = extractCustomerName(userMessage);
+    const phone = extractPhoneNumber(userMessage);
+    const address = extractAddress(userMessage);
+
+    setPurchaseContext((prev: any) => ({
+      ...prev,
+      customer_name: name || prev?.customer_name,
+      customer_phone: phone || prev?.customer_phone,
+      customer_address: address || prev?.customer_address,
+    }));
+  };
+
   const handleSend = async () => {
     if (!inputText.trim()) return;
     if (!agentActive) return;
 
     setError("");
     const messageToSend = inputText.trim();
+
+    // Extrae datos del mensaje del usuario y actualiza el contexto
+    updatePurchaseContext(messageToSend);
 
     const now = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 
@@ -168,12 +224,19 @@ export function AgentePage() {
     setIsTyping(true);
 
     try {
+      const payload: any = {
+        message: messageToSend,
+        history: messages.map(m => ({ role: m.role, content: m.text }))
+      };
+
+      // Envía purchase_context actualizado
+      if (purchaseContext) {
+        payload.purchase_context = purchaseContext;
+      }
+
       const response = await api.post<ChatResponse>(
         "/chat/me",
-        { 
-          message: messageToSend,
-          history: messages.map(m => ({ role: m.role, content: m.text }))
-        },
+        payload,
         true
       );
 
@@ -182,6 +245,19 @@ export function AgentePage() {
         ...prev,
         { role: "agent", text: response.agent_response, time: now },
       ]);
+
+      // Actualiza el contexto de compra si viene del backend
+      if (response.purchase_context) {
+        setPurchaseContext(response.purchase_context);
+      }
+
+      // Si se creó una orden, muestra confirmación
+      if (response.order_created) {
+        console.log("✅ Orden creada:", response.order_created);
+        setError(`✅ Orden #${response.order_created.id} creada exitosamente`);
+        // Limpia el contexto de compra después de la orden
+        setPurchaseContext(null);
+      }
     } catch (err) {
       setIsTyping(false);
       
