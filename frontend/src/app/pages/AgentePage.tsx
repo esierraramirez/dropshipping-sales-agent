@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bot,
   Send,
@@ -13,6 +14,7 @@ import {
   Info,
 } from "lucide-react";
 import { api, ApiError, type ChatResponse } from "../lib/api";
+import { clearAuthState } from "../lib/auth";
 
 const tones = [
   {
@@ -61,6 +63,8 @@ export function AgentePage() {
   const [vendorName, setVendorName] = useState("Tu Empresa");
 
   // Cargar nombre de la empresa
+  const navigate = useNavigate();
+  
   useEffect(() => {
     const loadVendorName = async () => {
       try {
@@ -69,11 +73,17 @@ export function AgentePage() {
           setVendorName(response.name);
         }
       } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          // Token inválido - limpiar y redirigir al login
+          clearAuthState();
+          navigate("/login", { replace: true });
+          return;
+        }
         console.error("Error cargando nombre de empresa:", err);
       }
     };
     loadVendorName();
-  }, []);
+  }, [navigate]);
 
   // Actualizar mensaje inicial cuando vendorName cambia por primera vez
   useEffect(() => {
@@ -174,6 +184,14 @@ export function AgentePage() {
       ]);
     } catch (err) {
       setIsTyping(false);
+      
+      // Manejar 401 - Token inválido
+      if (err instanceof ApiError && err.status === 401) {
+        clearAuthState();
+        navigate("/login", { replace: true });
+        return;
+      }
+      
       const message =
         err instanceof ApiError
           ? err.detail

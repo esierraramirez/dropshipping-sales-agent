@@ -24,7 +24,9 @@ import {
   Bar,
 } from "recharts";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import { api, ApiError, type DashboardResponse } from "../lib/api";
+import { clearAuthState } from "../lib/auth";
 
 const salesData = [
   { day: "Lun", ventas: 12400, ordenes: 8 },
@@ -146,6 +148,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState("");
 
@@ -156,6 +159,12 @@ export function DashboardPage() {
         setDashboard(data);
       } catch (err) {
         if (err instanceof ApiError) {
+          if (err.status === 401) {
+            // Token inválido o expirado - limpiar y redirigir al login
+            clearAuthState();
+            navigate("/login", { replace: true });
+            return;
+          }
           setError(err.detail);
         } else {
           setError("No fue posible cargar el dashboard desde el backend.");
@@ -164,7 +173,7 @@ export function DashboardPage() {
     };
 
     run();
-  }, []);
+  }, [navigate]);
 
   const weeklyOrders = useMemo(
     () => salesData.reduce((acc, item) => acc + item.ordenes, 0),
