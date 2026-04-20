@@ -47,16 +47,44 @@ type Message = {
   time: string;
 };
 
-const initialMessages: Message[] = [
+// Mensaje inicial vacío - se llenará con el nombre real de la empresa
+const getInitialMessages = (vendorName: string): Message[] => [
   {
     role: "agent",
-    text: "¡Hola! 👋 Soy el asistente virtual de Mi Moda Online. ¿En qué puedo ayudarte hoy?",
-    time: "10:00",
+    text: `¡Hola! 👋 Soy el asistente virtual de ${vendorName}. ¿En qué puedo ayudarte hoy?`,
+    time: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
   },
 ];
 
 export function AgentePage() {
   const STORAGE_KEY = "agent_chat_messages";
+  const [vendorName, setVendorName] = useState("Tu Empresa");
+
+  // Cargar nombre de la empresa
+  useEffect(() => {
+    const loadVendorName = async () => {
+      try {
+        const response = await api.get<{ name: string }>("/empresa/me", true);
+        if (response.name) {
+          setVendorName(response.name);
+        }
+      } catch (err) {
+        console.error("Error cargando nombre de empresa:", err);
+      }
+    };
+    loadVendorName();
+  }, []);
+
+  // Actualizar mensaje inicial cuando vendorName cambia por primera vez
+  useEffect(() => {
+    if (vendorName !== "Tu Empresa" && messages.length === 1 && messages[0].role === "agent") {
+      // Solo actualizar si es el primer mensaje y aún dice "Tu Empresa"
+      if (messages[0].text.includes("Tu Empresa")) {
+        const newMessages = getInitialMessages(vendorName);
+        setMessages(newMessages);
+      }
+    }
+  }, [vendorName]);
 
   // Función para convertir markdown simple a HTML
   const processMarkdown = (text: string) => {
@@ -92,9 +120,12 @@ export function AgentePage() {
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : initialMessages;
+      if (stored && stored !== '[]') {
+        return JSON.parse(stored);
+      }
+      return getInitialMessages(vendorName);
     } catch {
-      return initialMessages;
+      return getInitialMessages(vendorName);
     }
   });
 
@@ -402,8 +433,9 @@ export function AgentePage() {
           </div>
           <button
             onClick={() => {
-              setMessages(initialMessages);
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(initialMessages));
+              const freshMessages = getInitialMessages(vendorName);
+              setMessages(freshMessages);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(freshMessages));
             }}
             className="ml-auto rounded-lg p-2 transition-all"
             style={{ background: "#f8fafc", border: "1px solid #e2e8f0", color: "#94a3b8", cursor: "pointer" }}
