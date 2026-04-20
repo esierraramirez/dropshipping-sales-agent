@@ -167,6 +167,11 @@ CURRENCY_ALLOWED = {"COP", "USD", "EUR"}
 
 
 def normalize_text(value: Any) -> str:
+    # Manejo especial para Series (cuando viene de iterrows)
+    if isinstance(value, pd.Series):
+        # Si es una Series, toma el primer valor
+        value = value.iloc[0] if len(value) > 0 else ""
+    
     if pd.isna(value):
         return ""
     return str(value).strip()
@@ -243,48 +248,87 @@ def normalize_optional_text(value: Any) -> str | None:
 
 def normalize_dataframe(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     """
-    Normaliza el DataFrame del catálogo y retorna:
-    - DataFrame normalizado
-    - quality_report
+    Normaliza el DataFrame del catálogo de forma EXTREMADAMENTE tolerante.
+    Casi nunca rechaza una fila - intenta rescatar cualquier dato posible.
     """
     normalized_rows: List[Dict[str, Any]] = []
     invalid_rows = 0
     errors: List[Dict[str, Any]] = []
+    warnings: List[Dict[str, Any]] = []
 
     for index, row in df.iterrows():
         try:
+            # Convertir row a diccionario para asegurar acceso a valores escalares
+            row_dict = row.to_dict() if hasattr(row, 'to_dict') else dict(row)
+            
+            product_id = normalize_text(row_dict.get("product_id", ""))
+            name = normalize_text(row_dict.get("name", ""))
+            
+            # ESTRATEGIA DE RESCATE #1: Generar product_id si falta
+            if not product_id:
+                # Intenta usar nombre como base
+                if name:
+                    product_id = name.replace(" ", "_")[:30]
+                else:
+                    # Última opción: usar índice
+                    product_id = f"PROD_{index+1:05d}"
+                
+                warnings.append({
+                    "row_index": int(index),
+                    "warning": "product_id generado automáticamente",
+                    "generated_id": product_id
+                })
+            
+            # ESTRATEGIA DE RESCATE #2: Generar nombre si falta
+            if not name or len(name) < 2:
+                name = f"Producto {product_id}"
+                warnings.append({
+                    "row_index": int(index),
+                    "warning": "nombre generado automáticamente"
+                })
+            
+            # ESTRATEGIA DE RESCATE #3: Manejar shipping days
+            min_shipping = normalize_int(row_dict.get("min_shipping_days", 1))
+            max_shipping = normalize_int(row_dict.get("max_shipping_days", 7))
+            
+            # Si ambos son 0, usar valores por defecto
+            if min_shipping == 0 and max_shipping == 0:
+                min_shipping, max_shipping = 1, 7
+            # Si solo max es 0, usar min
+            elif max_shipping == 0:
+                max_shipping = min_shipping if min_shipping > 0 else 7
+            # Si solo min es 0, dejar max
+            elif min_shipping == 0:
+                min_shipping = max_shipping if max_shipping > 0 else 1
+            
+            # Si max < min, intercambiar
+            if max_shipping < min_shipping:
+                min_shipping, max_shipping = max_shipping, min_shipping
+            
             normalized_row = {
-                "product_id": normalize_text(row.get("product_id")),
-                "name": normalize_text(row.get("name")),
-                "category": normalize_category(row.get("category")),
-                "price": normalize_price(row.get("price")),
-                "currency": normalize_currency(row.get("currency")),
-                "stock_status": normalize_stock_status(row.get("stock_status")),
-                "min_shipping_days": normalize_int(row.get("min_shipping_days")),
-                "max_shipping_days": normalize_int(row.get("max_shipping_days")),
-                "short_description": normalize_optional_text(row.get("short_description")),
-                "full_description": normalize_optional_text(row.get("full_description")),
-                "brand": normalize_optional_text(row.get("brand")),
-                "size": normalize_optional_text(row.get("size")),
-                "colors": normalize_optional_text(row.get("colors")),
-                "launch_year": normalize_int(row.get("launch_year")) if not pd.isna(row.get("launch_year")) else None,
-                "sku": normalize_optional_text(row.get("sku")),
-                "shipping_cost": normalize_price(row.get("shipping_cost")) if not pd.isna(row.get("shipping_cost")) else None,
-                "shipping_regions": normalize_optional_text(row.get("shipping_regions")),
-                "returns_policy": normalize_optional_text(row.get("returns_policy")),
-                "warranty_policy": normalize_optional_text(row.get("warranty_policy")),
-                "specs": normalize_optional_text(row.get("specs")),
-                "variants": normalize_optional_text(row.get("variants")),
-                "source": normalize_optional_text(row.get("source")),
+                "product_id": product_id,
+                "name": name,
+                "category": normalize_category(row_dict.get("category", "General")),
+                "price": normalize_price(row_dict.get("price", 0)),
+                "currency": normalize_currency(row_dict.get("currency", "COP")),
+                "stock_status": normalize_stock_status(row_dict.get("stock_status", "disponible")),
+                "min_shipping_days": min_shipping,
+                "max_shipping_days": max_shipping,
+                "short_description": normalize_optional_text(row_dict.get("short_description", "")),
+                "full_description": normalize_optional_text(row_dict.get("full_description", "")),
+                "brand": normalize_optional_text(row_dict.get("brand", "")),
+                "size": normalize_optional_text(row_dict.get("size", "")),
+                "colors": normalize_optional_text(row_dict.get("colors", "")),
+                "launch_year": normalize_int(row_dict.get("launch_year")) if not pd.isna(row_dict.get("launch_year")) else None,
+                "sku": normalize_optional_text(row_dict.get("sku", "")),
+                "shipping_cost": normalize_price(row_dict.get("shipping_cost", 0)) if not pd.isna(row_dict.get("shipping_cost")) else None,
+                "shipping_regions": normalize_optional_text(row_dict.get("shipping_regions", "")),
+                "returns_policy": normalize_optional_text(row_dict.get("returns_policy", "")),
+                "warranty_policy": normalize_optional_text(row_dict.get("warranty_policy", "")),
+                "specs": normalize_optional_text(row_dict.get("specs", "")),
+                "variants": normalize_optional_text(row_dict.get("variants", "")),
+                "source": normalize_optional_text(row_dict.get("source", "")),
             }
-
-            # Validaciones mínimas de fila
-            if not normalized_row["product_id"]:
-                raise ValueError("product_id vacío")
-            if len(normalized_row["name"]) < 3:
-                raise ValueError("name demasiado corto")
-            if normalized_row["max_shipping_days"] < normalized_row["min_shipping_days"]:
-                raise ValueError("max_shipping_days menor que min_shipping_days")
 
             normalized_rows.append(normalized_row)
 
@@ -292,18 +336,39 @@ def normalize_dataframe(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Any]]
             invalid_rows += 1
             errors.append({
                 "row_index": int(index),
-                "error": str(e)
+                "error": str(e),
+                "row_data": str(row.to_dict())
             })
+            # Loguear pero continuar - no queremos perder el proceso
+            import traceback
+            print(f"⚠️ Error procesando fila {index}: {str(e)}")
+            traceback.print_exc()
+            continue
 
-    normalized_df = pd.DataFrame(normalized_rows)
+    # SI NO HAY FILAS VÁLIDAS, crear DataFrame con estructura correcta pero VACÍO
+    # Esto evita el error de "No columns to parse"
+    if not normalized_rows:
+        print(f"⚠️ ADVERTENCIA: Todas las {len(df)} filas fueron rechazadas!")
+        print(f"Errores encontrados: {errors}")
+        normalized_df = pd.DataFrame(columns=[
+            "product_id", "name", "category", "price", "currency", "stock_status",
+            "min_shipping_days", "max_shipping_days", "short_description", "full_description",
+            "brand", "size", "colors", "launch_year", "sku", "shipping_cost",
+            "shipping_regions", "returns_policy", "warranty_policy", "specs", "variants", "source"
+        ])
+    else:
+        normalized_df = pd.DataFrame(normalized_rows)
 
     quality_report = {
         "total_rows_input": int(len(df)),
         "valid_rows": int(len(normalized_df)),
         "invalid_rows": int(invalid_rows),
+        "warnings": warnings,
         "errors": errors
     }
 
+    print(f"✅ Normalización completada: {len(normalized_df)} filas válidas de {len(df)} totales")
+    
     return normalized_df, quality_report
 
 

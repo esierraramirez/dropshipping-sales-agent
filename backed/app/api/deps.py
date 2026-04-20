@@ -8,9 +8,12 @@ from app.models.vendor import Vendor
 
 
 def get_current_vendor(
-    authorization: str = Header(...),
+    authorization: str = Header(None),
     db: Session = Depends(get_db),
 ) -> Vendor:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token no proporcionado.")
+    
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Token inválido.")
 
@@ -29,5 +32,7 @@ def get_current_vendor(
     vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
     if not vendor:
         raise HTTPException(status_code=404, detail="Empresa no encontrada.")
+
+    return vendor
 
     return vendor

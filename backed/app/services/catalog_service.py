@@ -175,6 +175,7 @@ def save_normalized_catalog_to_db(db: Session, vendor_name: str) -> dict:
 
     vendor_slug = slugify(vendor_name)
     processed_file = Path(PROCESSED_DATA_PATH) / vendor_slug / "catalog_normalized.csv"
+    report_file = Path(PROCESSED_DATA_PATH) / vendor_slug / "data_quality_report.json"
 
     if not processed_file.exists():
         raise HTTPException(
@@ -185,7 +186,58 @@ def save_normalized_catalog_to_db(db: Session, vendor_name: str) -> dict:
     df = read_excel_file(str(processed_file)) if processed_file.suffix == ".xlsx" else None
     if df is None:
         import pandas as pd
-        df = pd.read_csv(processed_file)
+        try:
+            df = pd.read_csv(processed_file)
+        except pd.errors.EmptyDataError:
+            # Leer reporte de calidad para dar más contexto
+            quality_report = {}
+            if report_file.exists():
+                with open(report_file, "r") as f:
+                    quality_report = json.load(f)
+            
+            error_detail = "El archivo CSV normalizado está vacío."
+            if quality_report:
+                warnings = quality_report.get("warnings", [])
+                errors = quality_report.get("errors", [])
+                if warnings:
+                    error_detail += f"\nAdvertencias durante normalización: {len(warnings)}"
+                if errors:
+                    error_detail += f"\nErrores: {len(errors)} - {errors[:2]}"  # Mostrar primeros 2
+            
+            raise HTTPException(
+                status_code=400,
+                detail=error_detail + "\nVerifica que tu Excel tenga al menos una fila de datos válida con product_id y name."
+            )
+    
+    # Validar que hay al menos una fila
+    if len(df) == 0:
+        # Leer reporte de calidad
+        quality_report = {}
+        if report_file.exists():
+            with open(report_file, "r") as f:
+                quality_report = json.load(f)
+        
+        error_message = "No hay productos válidos en el catálogo normalizado."
+        if quality_report:
+            total_input = quality_report.get("total_rows_input", 0)
+            invalid = quality_report.get("invalid_rows", 0)
+            warnings = quality_report.get("warnings", [])
+            errors = quality_report.get("errors", [])
+            
+            error_message += f"\n\nReporte de Normalización:"
+            error_message += f"\n- Filas en Excel: {total_input}"
+            error_message += f"\n- Filas rechazadas: {invalid}"
+            error_message += f"\n- Advertencias: {len(warnings)}"
+            
+            if errors:
+                error_message += f"\n- Errores encontrados:"
+                for err in errors[:3]:  # Mostrar primeros 3 errores
+                    error_message += f"\n  Fila {err.get('row_index')}: {err.get('error')}"
+        
+        raise HTTPException(
+            status_code=400,
+            detail=error_message
+        )
 
     # Limpiar productos previos del vendedor para reemplazar el catálogo actual
     db.query(Product).filter(Product.vendor_id == vendor.id).delete()
@@ -365,6 +417,32 @@ def normalize_catalog_for_authenticated_vendor(vendor: Vendor) -> dict:
 
 
 def save_authenticated_vendor_catalog_to_db(db: Session, vendor: Vendor) -> dict:
+    """
+    Guarda catálogo a la base de datos del vendor autenticado.
+    Si no existe CSV normalizado, lo normaliza automáticamente.
+    """
+    vendor_slug = vendor.slug
+    processed_file = Path(PROCESSED_DATA_PATH) / vendor_slug / "catalog_normalized.csv"
+    
+    # Si no existe CSV normalizado, normalizarlo primero
+    if not processed_file.exists():
+        try:
+            # Intentar normalizar automáticamente desde el Excel más reciente
+            normalize_result = normalize_catalog_for_vendor(vendor_name=vendor.name)
+            print(f"📝 Catálogo normalizado automáticamente: {normalize_result}")
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No existe catálogo normalizado. Primero debes subir un Excel y normalizarlo. Error: {str(e)}"
+            )
+    
+    # Verificar que el CSV existe y tiene contenido
+    if not processed_file.exists():
+        raise HTTPException(
+            status_code=400,
+            detail=f"El archivo normalizado no se creó correctamente. Verifica tu Excel."
+        )
+    
     return save_normalized_catalog_to_db(db=db, vendor_name=vendor.name)
 
 

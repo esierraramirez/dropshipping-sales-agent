@@ -24,6 +24,7 @@ def upsert_my_whatsapp_connection(
     db: Session = Depends(get_db),
     current_vendor: Vendor = Depends(get_current_vendor)
 ):
+    """Upsert WhatsApp connection for current vendor"""
     return upsert_whatsapp_connection(
         db=db,
         vendor=current_vendor,
@@ -36,6 +37,7 @@ def get_my_whatsapp_connection(
     db: Session = Depends(get_db),
     current_vendor: Vendor = Depends(get_current_vendor)
 ):
+    """Get WhatsApp connection for current vendor"""
     return get_whatsapp_connection_by_vendor(db=db, vendor=current_vendor)
 
 
@@ -46,7 +48,7 @@ def verify_whatsapp_webhook(
     hub_challenge: str = Query(alias="hub.challenge"),
     db: Session = Depends(get_db),
 ):
-    # Busca una conexión cuyo verify_token coincida
+    """Verify WhatsApp webhook with Meta"""
     from app.models.whatsapp_connection import WhatsAppConnection
 
     connection = (
@@ -66,5 +68,6 @@ async def receive_whatsapp_webhook(
     request: Request,
     db: Session = Depends(get_db),
 ):
+    """Receive incoming WhatsApp message from Meta"""
     payload = await request.json()
     return await process_incoming_whatsapp_message(db=db, payload=payload)
