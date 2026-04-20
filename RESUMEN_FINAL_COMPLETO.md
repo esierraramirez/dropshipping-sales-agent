@@ -746,51 +746,101 @@ PATCH  /orders/me/{id}/status  ← Actualizar estado
 
 ## 🔗 Integración WhatsApp Business
 
-### Configuración Requerida
+### 🆘 SOLUCIÓN AL ERROR "ID '1095201550345996' no existe"
 
-#### 1. **Meta Business Manager**
-```
-Necesario:
-- Business Account ID
-- Phone Number ID (desde WABA)
-- Access Token (OAuth)
-- Webhook Token (verificación)
+**El problema:** Usas un ID incorrecto en tu configuración.
+
+**La solución:** Usa los IDs CORRECTOS de Meta:
+
+| Parámetro | **Tu Valor Correcto** | ❌ No Usar | Dónde Usarlo |
+|-----------|---|---|---|
+| **Phone Number ID** | `989003167640614` | `1095201550345996` | ✅ Enviar mensajes + Webhook verification |
+| **Business Account ID** | `2479057362544519` | - | ✅ Configuración de webhooks en Meta |
+| **Access Token** | `EAAMGYyYgJog...` | - | ✅ Headers de autorización |
+
+### Configuración Paso a Paso
+
+#### Paso 1: Obtén Credenciales de Meta
+- URL: https://developers.facebook.com/apps
+- Selecciona tu App → **WhatsApp** → **API Setup**
+- En "Seleccionar números de teléfono":
+  - ✅ Copia **Identificador de número de teléfono**: `989003167640614`
+  - ✅ Copia **Identificador de la cuenta de WhatsApp Business**: `2479057362544519`
+  - ✅ Copia **Token de acceso** (el token largo que comienza con `EAA`)
+
+#### Paso 2: Registra en tu Base de Datos
+Ejecuta el script interactivo:
+```powershell
+python scripts/configure_whatsapp.py
 ```
 
-#### 2. **Credentials en Base de Datos**
+O manualmente con cURL:
+```bash
+curl -X PUT http://localhost:8000/whatsapp/me \
+  -H "Authorization: Bearer {tu_jwt_token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone_number": "+1 555 636 6119",
+    "phone_number_id": "989003167640614",
+    "business_account_id": "2479057362544519",
+    "access_token": "EAAMGYyYgJog...",
+    "verify_token": "my_secret_verify_token_2024"
+  }'
+```
+
+#### Paso 3: Configura Webhook en Meta
+1. Ve a: https://developers.facebook.com/apps → Tu App → **WhatsApp** → **Configuration**
+2. En "Webhook Configuration":
+   - **Webhook URL**: `https://tu-ngrok-url.ngrok.io/whatsapp/webhook` (dev) o `https://tu-dominio.com/whatsapp/webhook` (producción)
+   - **Verify Token**: `my_secret_verify_token_2024` (DEBE SER IDÉNTICO al del Paso 2)
+3. En "Eventos de Webhook": Suscribirse a `messages` y `message_status`
+4. Guardar
+
+#### Paso 4: Verifica Funcionamiento
+```powershell
+python scripts/test_whatsapp.py
+```
+
+Este script verifica:
+- ✅ Backend está disponible
+- ✅ Webhook puede ser verificado por Meta
+- ✅ Webhook recibe mensajes entrantes
+- ✅ Backend puede enviar mensajes de vuelta
+
+#### Paso 5: Prueba Final
+En Meta → WhatsApp → API Setup → "Enviar y recibir mensajes" → Envía un mensaje de prueba a tu número.
+
+**Resultado esperado:**
+- Cliente recibe el mensaje en WhatsApp ✅
+- Tu backend recibe POST en /whatsapp/webhook ✅
+- Agente genera respuesta ✅
+- Cliente recibe respuesta automática ✅
+
+### Tabla: whatsapp_connections
+
 ```
 Tabla: whatsapp_connections
 │
-├─ phone_number_id    ← Número de WhatsApp Business
-├─ business_account_id ← Cuenta Meta
-├─ access_token       ← OAuth token (ENCRIPTADO)
-├─ webhook_token      ← Verificación webhook
-└─ is_connected       ← Status
+├─ id                  ← Primary Key
+├─ vendor_id           ← Foreign Key a vendors (multi-tenant)
+├─ phone_number        ← Número formateado: +1 555 636 6119
+├─ phone_number_id     ← CORRECTO: 989003167640614
+├─ business_account_id ← CORRECTO: 2479057362544519
+├─ access_token        ← OAuth token (largo, comienza con EAA)
+├─ verify_token        ← Tu token secreto para webhook
+├─ is_connected        ← Boolean (True/False)
+└─ connected_at        ← Timestamp de conexión
 ```
 
-#### 3. **Configuración WhatsApp Business API**
-```
-API Version: v23.0 (configurable en ENV)
+### Parámetros de Conexión
 
-Webhook URL (ejemplo):
-https://tudominio.com/whatsapp/webhook/me
-
-Webhook Verify Token:
-Tu_token_aqui_generado_aleatoriamente
-
-Events to Subscribe:
-- messages
-```
-
-#### 4. **Parámetros de Conexión**
-
-| Parámetro | Tipo | Ejemplo | Requerido |
-|-----------|------|---------|-----------|
-| phone_number_id | String | "1234567890123" | ✅ |
-| business_account_id | String | "0987654321" | ✅ |
-| access_token | String (Encrypted) | "EAAAAu..." | ✅ |
-| webhook_token | String | "abc123xyz789" | ✅ |
-| whatsapp_api_version | String | "v23.0" | ✅ |
+| Parámetro | Tipo | Ejemplo | Requerido | Donde obtener |
+|-----------|------|---------|-----------|---|
+| phone_number_id | String (números) | `989003167640614` | ✅ | Meta → API Setup → Identificador de número |
+| business_account_id | String (números) | `2479057362544519` | ✅ | Meta → API Setup → Identificador de la cuenta |
+| access_token | String (comienza con EAA) | `EAAMGYyYgJog...` | ✅ | Meta → Token Generator |
+| verify_token | String (tu generada) | `mi_token_secreto` | ✅ | Generas tú cualquier valor |
+| whatsapp_api_version | String | `v25.0` | ✅ | Configurable en `core/config.py` |
 
 #### 5. **Flujo de Conexión**
 
