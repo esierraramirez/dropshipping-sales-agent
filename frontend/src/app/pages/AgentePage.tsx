@@ -513,36 +513,6 @@ export function AgentePage() {
                 </div>
               </div>
             </div>
-          ))}
-
-          {isTyping && (
-            <div className="flex items-end gap-2">
-              <div
-                className="rounded-full flex items-center justify-center"
-                style={{ width: "28px", height: "28px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
-              >
-                <Bot size={14} style={{ color: "#fff" }} />
-              </div>
-              <div
-                className="rounded-2xl px-4 py-3"
-                style={{ background: "#f8fafc", border: "1px solid #f1f5f9", borderBottomLeftRadius: "4px" }}
-              >
-                <div className="flex items-center gap-1">
-                  {[0, 1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="rounded-full animate-bounce"
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        background: "#94a3b8",
-                        animationDelay: `${i * 0.15}s`,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
           )}
         </div>
 
