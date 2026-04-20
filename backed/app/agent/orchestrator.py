@@ -1,3 +1,4 @@
+from typing import Optional, List
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -13,15 +14,37 @@ def get_vendor_settings(db: Session, vendor_id: int) -> VendorSettings | None:
     return db.query(VendorSettings).filter(VendorSettings.vendor_id == vendor_id).first()
 
 
+def _build_enhanced_query(user_message: str, history: Optional[List[dict]] = None) -> str:
+    """
+    Si hay historial conversacional, agrega el contexto anterior 
+    para mejorar la búsqueda de similitud.
+    """
+    if not history or len(history) == 0:
+        return user_message
+    
+    # Extrae el último mensaje del agente para contexto
+    # Esto ayuda a mantener el tema de conversación
+    context_parts = [user_message]
+    
+    for msg in reversed(history[-4:]):  # Toma últimos 4 mensajes
+        if msg.get("role") == "user":
+            context_parts.insert(0, msg.get("content", ""))
+            break  # Solo el último mensaje del usuario anterior
+    
+    # Combina para crear una query más contextual
+    return " ".join(context_parts)
+
+
 def generate_agent_reply(
     db: Session,
     vendor: Vendor,
     user_message: str,
+    conversation_history: Optional[List[dict]] = None,
     top_k: int = 3
 ) -> dict:
     """
     Orquesta todo el flujo del agente:
-    settings -> horario -> retrieval -> prompt -> LLM -> respuesta
+    settings -> horario -> retrieval mejorado -> prompt -> LLM -> respuesta
     """
     settings = get_vendor_settings(db=db, vendor_id=vendor.id)
 
@@ -54,9 +77,12 @@ def generate_agent_reply(
             "matches_found": 0,
         }
 
+    # Mejora la query si hay historial para mejor contexto
+    enhanced_query = _build_enhanced_query(user_message, conversation_history)
+
     retrieval_result = retrieve_vendor_context(
         vendor=vendor,
-        query=user_message,
+        query=enhanced_query,
         top_k=top_k
     )
 

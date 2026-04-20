@@ -10,7 +10,7 @@ class OpenAIAdapter:
     
     Optimizaciones aplicadas:
     - Modelo: gpt-5.4-nano (94% más económico)
-    - Razonamiento: none (60-80% menos tokens)
+    - Razonamiento: medium (razonamiento balanceado, único soportado en gpt-5.3)
     - Verbosidad: low (respuestas concisas)
     - Max output: 300 tokens (evita respuestas largas)
     - Truncado de inputs: 3000 chars max (evita requests gigantes)
@@ -45,7 +45,7 @@ class OpenAIAdapter:
         Genera una respuesta usando la Responses API de OpenAI.
         
         Parámetros optimizados para minimizar tokens:
-        - reasoning_effort="none": Sin razonamiento = más rápido y barato
+        - reasoning_effort="medium": Razonamiento balanceado (soportado por gpt-5.3)
         - verbosity="low": Respuestas concisas
         - max_output_tokens=300: Limita salida a ~1200 caracteres
         
@@ -53,11 +53,6 @@ class OpenAIAdapter:
         - Input: ~400 tokens (system prompt + contexto + user message)
         - Output: ~150 tokens (respuesta concisa)
         - Total: ~550 tokens por request
-        
-        Comparado con gpt-4:
-        - gpt-4: ~1500 tokens/request
-        - Este adapter: ~550 tokens/request
-        - Ahorro: 63% menos tokens, 97% menos costo
         """
         try:
             # Truncar inputs para evitar exceder límites y gastar tokens unnecessarios
@@ -70,17 +65,15 @@ class OpenAIAdapter:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message},
                 ],
-                # Optimización 1: Sin razonamiento
-                # reasoning_effort="none" desactiva la cadena de pensamiento interna
-                # Esto ahorra 60-80% de tokens vs "low"
+                # Optimización 1: Razonamiento balanceado
+                # reasoning_effort="medium" es el único valor soportado en gpt-5.3
                 reasoning={
-                    "effort": self.reasoning_effort  # "none" es el default
+                    "effort": self.reasoning_effort  # "medium" es requerido
                 },
-                # Optimización 2: Respuestas concisas
-                # verbosity="low" genera respuestas cortas y al punto
-                # Reduce tokens de salida en ~30%
+                # Optimización 2: Respuestas balanceadas
+                # verbosity="medium" es el único soportado en gpt-5.3
                 text={
-                    "verbosity": self.verbosity  # "low" es el default
+                    "verbosity": self.verbosity  # "medium" es requerido
                 },
                 # Optimización 3: Limita la salida
                 # Máximo 300 tokens (~1200 caracteres)

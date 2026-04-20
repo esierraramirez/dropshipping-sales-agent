@@ -3,7 +3,7 @@ Configuración optimizada de OpenAI para minimizar tokens y costos.
 
 Estrategia de optimización:
 1. Modelo: gpt-5.4-nano (más económico)
-2. Razonamiento: "none" (sin razonamiento = 60-80% menos tokens)
+2. Razonamiento: "medium" (razonamiento balanceado, único soportado por gpt-5.3)
 3. Verbosidad: "low" (respuestas concisas)
 4. Max output: 300 tokens (respuestas limitadas)
 5. Truncado de inputs: 1000 chars máximo
@@ -23,23 +23,17 @@ from pydantic import BaseModel, Field
 class ReasoningEffort(str, Enum):
     """Niveles de razonamiento del modelo.
     
-    - none: Sin razonamiento (RECOMENDADO)
-    - low: Razonamiento mínimo
+    - medium: Razonamiento balanceado (SOPORTADO por gpt-5.3)
     """
-    NONE = "none"
-    LOW = "low"
+    MEDIUM = "medium"
 
 
 class Verbosity(str, Enum):
     """Nivel de detalle en respuestas.
     
-    - low: Respuestas concisas (RECOMENDADO para chat)
-    - medium: Respuestas balanceadas
-    - high: Respuestas detalladas
+    - medium: Respuestas balanceadas (único soportado por gpt-5.3)
     """
-    LOW = "low"
     MEDIUM = "medium"
-    HIGH = "high"
 
 
 class LLMConfig(BaseModel):
@@ -49,8 +43,8 @@ class LLMConfig(BaseModel):
     model: str = "gpt-5.4-nano"
     
     # Parámetros de optimización
-    reasoning_effort: ReasoningEffort = ReasoningEffort.NONE
-    verbosity: Verbosity = Verbosity.LOW
+    reasoning_effort: ReasoningEffort = ReasoningEffort.MEDIUM
+    verbosity: Verbosity = Verbosity.MEDIUM
     
     # Límites de tokens
     max_input_tokens: int = Field(default=1000, description="Máximo de tokens en entrada")
@@ -69,8 +63,8 @@ class LLMConfig(BaseModel):
 # Configuración por defecto: optimizada para chat economico
 CHAT_OPTIMIZED_CONFIG = LLMConfig(
     model="gpt-5.4-nano",
-    reasoning_effort=ReasoningEffort.NONE,
-    verbosity=Verbosity.LOW,
+    reasoning_effort=ReasoningEffort.MEDIUM,
+    verbosity=Verbosity.MEDIUM,
     max_input_tokens=1000,
     max_output_tokens=300,
     product_context_lines=10,
@@ -80,7 +74,7 @@ CHAT_OPTIMIZED_CONFIG = LLMConfig(
 # Configuración para análisis más profundo (si es necesario)
 ANALYSIS_CONFIG = LLMConfig(
     model="gpt-5.4-mini",  # Más potente pero sigue flexible
-    reasoning_effort=ReasoningEffort.LOW,
+    reasoning_effort=ReasoningEffort.MEDIUM,
     verbosity=Verbosity.MEDIUM,
     max_input_tokens=2000,
     max_output_tokens=500,
@@ -91,8 +85,8 @@ ANALYSIS_CONFIG = LLMConfig(
 # Configuración para uso agresivo (máximo ahorro)
 AGGRESSIVE_COST_CONFIG = LLMConfig(
     model="gpt-5.4-nano",
-    reasoning_effort=ReasoningEffort.NONE,
-    verbosity=Verbosity.LOW,
+    reasoning_effort=ReasoningEffort.MEDIUM,
+    verbosity=Verbosity.MEDIUM,
     max_input_tokens=500,
     max_output_tokens=150,
     product_context_lines=5,

@@ -26,8 +26,8 @@ class Settings(BaseModel):
     # Límites de tokens para optimizar costos
     OPENAI_MAX_INPUT_TOKENS: int = int(os.getenv("OPENAI_MAX_INPUT_TOKENS", "1000"))  # Limita el contexto de entrada
     OPENAI_MAX_OUTPUT_TOKENS: int = int(os.getenv("OPENAI_MAX_OUTPUT_TOKENS", "300"))  # Respuestas concisas
-    OPENAI_VERBOSITY: str = os.getenv("OPENAI_VERBOSITY", "low")  # "low", "medium", "high"
-    OPENAI_REASONING_EFFORT: str = os.getenv("OPENAI_REASONING_EFFORT", "none")  # "none", "low"
+    OPENAI_VERBOSITY: str = os.getenv("OPENAI_VERBOSITY", "medium")  # "medium" es el único soportado en gpt-5.3
+    OPENAI_REASONING_EFFORT: str = os.getenv("OPENAI_REASONING_EFFORT", "medium")  # "medium" es el único soportado en gpt-5.3
     WHATSAPP_API_VERSION: str = os.getenv("WHATSAPP_API_VERSION", "v23.0")
 
 

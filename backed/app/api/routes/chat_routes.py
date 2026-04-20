@@ -16,8 +16,14 @@ def chat_with_agent(
     db: Session = Depends(get_db),
     current_vendor: Vendor = Depends(get_current_vendor)
 ):
+    # Convierte el historial a formato diccionario si existe
+    history = None
+    if payload.history:
+        history = [{"role": msg.role, "content": msg.content} for msg in payload.history]
+    
     return process_chat_message(
         db=db,
         vendor=current_vendor,
-        message=payload.message
+        message=payload.message,
+        history=history
     )

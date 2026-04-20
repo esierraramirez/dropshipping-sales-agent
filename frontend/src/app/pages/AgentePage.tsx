@@ -99,7 +99,10 @@ export function AgentePage() {
     try {
       const response = await api.post<ChatResponse>(
         "/chat/me",
-        { message: messageToSend },
+        { 
+          message: messageToSend,
+          history: messages.map(m => ({ role: m.role, content: m.text }))
+        },
         true
       );
 
