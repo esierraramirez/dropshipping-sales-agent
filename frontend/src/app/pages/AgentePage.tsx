@@ -58,6 +58,36 @@ const initialMessages: Message[] = [
 export function AgentePage() {
   const STORAGE_KEY = "agent_chat_messages";
 
+  // Función para convertir markdown simple a HTML
+  const processMarkdown = (text: string) => {
+    // Convierte **texto** a <b>texto</b>
+    return text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+  };
+
+  // Función para renderizar texto con markdown
+  const renderMessageText = (text: string, role: string) => {
+    const processed = processMarkdown(text);
+    
+    // Separa por saltos de línea
+    const lines = processed.split("\n");
+    
+    return lines.map((line, idx) => (
+      <div key={idx}>
+        <div
+          dangerouslySetInnerHTML={{ __html: line }}
+          style={{
+            fontSize: "13.5px",
+            color: role === "agent" ? "#374151" : "#fff",
+            lineHeight: 1.6,
+            whiteSpace: "pre-wrap",
+            wordWrap: "break-word",
+          }}
+        />
+        {idx < lines.length - 1 && <div style={{ height: "4px" }} />}
+      </div>
+    ));
+  };
+
   // Initialize messages from localStorage or use defaults
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
@@ -130,10 +160,12 @@ export function AgentePage() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      // Ctrl+Enter o Cmd+Enter envía el mensaje
       e.preventDefault();
       handleSend();
     }
+    // Enter normal crea una nueva línea (behavior por defecto)
   };
 
   const toggleSchedule = (index: number) => {
@@ -429,25 +461,56 @@ export function AgentePage() {
                   borderBottomRightRadius: msg.role === "user" ? "4px" : "16px",
                 }}
               >
-                <p
+                <div>
+                  {renderMessageText(msg.text, msg.role)}
+                </div>
+                <div
                   style={{
-                    fontSize: "13.5px",
-                    color: msg.role === "agent" ? "#374151" : "#fff",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {msg.text}
-                </p>
-                <p
-                  style={{
-                    fontSize: "10.5px",
-                    color: msg.role === "agent" ? "#94a3b8" : "rgba(255,255,255,0.65)",
-                    marginTop: "4px",
-                    textAlign: msg.role === "user" ? "right" : "left",
+                    fontSize: "11px",
+                    color: msg.role === "agent" ? "#94a3b8" : "rgba(255,255,255,0.7)",
+                    marginTop: "6px",
                   }}
                 >
                   {msg.time}
-                </p>
+                </div>
+              </div>
+            </div>
+          ))}
+          {isTyping && (
+            <div className="flex items-end gap-2">
+              <div
+                className="rounded-full flex items-center justify-center shrink-0"
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                }}
+              >
+                <Bot size={14} style={{ color: "#fff" }} />
+              </div>
+              <div
+                className="rounded-2xl px-4 py-3"
+                style={{
+                  background: "#f8fafc",
+                  border: "1px solid #f1f5f9",
+                  borderBottomLeftRadius: "4px",
+                }}
+              >
+                <div className="flex gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <div
+                      key={i}
+                      style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        background: "#cbd5e1",
+                        animation: `bounce 1.4s infinite`,
+                        animationDelay: `${i * 0.2}s`,
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           ))}
@@ -518,31 +581,38 @@ export function AgentePage() {
           )}
 
           <div
-            className="flex items-center gap-3 rounded-2xl px-4 py-3"
+            className="flex gap-3 rounded-2xl p-4"
             style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0" }}
           >
-            <input
-              type="text"
+            <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Escribe un mensaje de prueba..."
-              className="flex-1 outline-none bg-transparent"
-              style={{ fontSize: "13.5px", color: "#0f172a" }}
+              placeholder="Escribe tu mensaje (Enter para saltar línea, Ctrl+Enter para enviar)..."
+              className="flex-1 outline-none bg-transparent resize-none"
+              style={{
+                fontSize: "13.5px",
+                color: "#0f172a",
+                fontFamily: "system-ui, -apple-system, sans-serif",
+                lineHeight: 1.5,
+                maxHeight: "120px",
+              }}
+              rows={3}
             />
             <button
               onClick={handleSend}
               disabled={!inputText.trim()}
-              className="rounded-xl flex items-center justify-center transition-all"
+              className="rounded-xl flex items-center justify-center transition-all shrink-0"
               style={{
-                width: "34px",
-                height: "34px",
+                width: "40px",
+                height: "40px",
                 background: inputText.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#e2e8f0",
                 border: "none",
                 cursor: inputText.trim() ? "pointer" : "not-allowed",
               }}
+              title="Ctrl+Enter para enviar"
             >
-              <Send size={14} style={{ color: inputText.trim() ? "#fff" : "#94a3b8" }} />
+              <Send size={16} style={{ color: inputText.trim() ? "#fff" : "#94a3b8" }} />
             </button>
           </div>
         </div>

@@ -101,3 +101,50 @@ def serialize_order(order: Order) -> dict:
         "status": order.status,
         "created_at": order.created_at.isoformat() if order.created_at else None,
     }
+
+
+def create_order_from_chat(
+    db: Session,
+    vendor: Vendor,
+    customer_name: str,
+    customer_phone: str,
+    items: list[dict],
+    conversation_summary: str = "",
+    customer_address: str = ""
+) -> dict:
+    """
+    Crea una orden desde la conversación del chat del agente.
+    
+    Items format: [{"product_id": "...", "product_name": "...", "quantity": 1, "unit_price": 50000}, ...]
+    """
+    total_amount = 0.0
+    normalized_items = []
+
+    for item in items:
+        item_total = item.get("quantity", 1) * item.get("unit_price", 0)
+        total_amount += item_total
+
+        normalized_items.append({
+            "product_id": item.get("product_id", ""),
+            "product_name": item.get("product_name", ""),
+            "quantity": item.get("quantity", 1),
+            "unit_price": item.get("unit_price", 0)
+        })
+
+    order = Order(
+        vendor_id=vendor.id,
+        customer_name=customer_name,
+        customer_phone=customer_phone,
+        customer_address=customer_address,
+        items_json=json.dumps(normalized_items, ensure_ascii=False),
+        total_amount=total_amount,
+        status="pending",
+        chat_summary=conversation_summary,
+        conversation_notes="Orden creada desde conversación de chat del agente"
+    )
+
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    return serialize_order(order)

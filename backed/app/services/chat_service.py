@@ -9,7 +9,8 @@ def process_chat_message(
     db: Session,
     vendor: Vendor,
     message: str,
-    history: Optional[List[dict]] = None
+    history: Optional[List[dict]] = None,
+    purchase_context: Optional[dict] = None
 ) -> dict:
     # top_k=2 para optimizar tokens (vs 3)
     # Solo recupera los 2 productos más relevantes para ahorrar contexto
@@ -18,5 +19,6 @@ def process_chat_message(
         vendor=vendor,
         user_message=message,
         conversation_history=history,  # Pasa el historial si está disponible
+        purchase_context=purchase_context,  # Pasa el contexto de compra
         top_k=2  # Reducido de 3 para ahorrar tokens
     )
