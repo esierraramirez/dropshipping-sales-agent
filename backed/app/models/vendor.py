@@ -41,3 +41,4 @@ class Vendor(Base):
     settings = relationship("VendorSettings", back_populates="vendor", uselist=False, cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="vendor", cascade="all, delete-orphan")
     whatsapp_connection = relationship("WhatsAppConnection", back_populates="vendor", uselist=False, cascade="all, delete-orphan")
+    messenger_connection = relationship("MessengerConnection", back_populates="vendor", uselist=False, cascade="all, delete-orphan")

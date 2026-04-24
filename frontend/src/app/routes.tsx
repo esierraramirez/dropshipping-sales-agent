@@ -8,6 +8,7 @@ import { CatalogoPage } from "./pages/CatalogoPage";
 import { AgentePage } from "./pages/AgentePage";
 import { OrdenesPage } from "./pages/OrdenesPage";
 import { WhatsAppPage } from "./pages/WhatsAppPage";
+import { MessengerPage } from "./pages/MessengerPage";
 import { ConfiguracionPage } from "./pages/ConfiguracionPage";
 
 export const router = createBrowserRouter([
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
       { path: "agente", Component: AgentePage },
       { path: "ordenes", Component: OrdenesPage },
       { path: "whatsapp", Component: WhatsAppPage },
+      { path: "messenger", Component: MessengerPage },
       { path: "configuracion", Component: ConfiguracionPage },
     ],
   },
