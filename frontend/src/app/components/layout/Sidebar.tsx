@@ -13,7 +13,6 @@ import {
   Zap,
   LogOut,
 } from "lucide-react";
-import { useState } from "react";
 import { clearAuthState, getCurrentVendor } from "../../lib/auth";
 
 const navItems = [
@@ -103,19 +102,19 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) =>
+              className={({ isActive: active }) =>
                 `flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150 group ${
-                  isActive
+                  active
                     ? "sidebar-nav-active"
                     : "sidebar-nav-item"
                 }`
               }
-              style={({ isActive }) => ({
-                background: isActive
+              style={({ isActive: active }) => ({
+                background: active
                   ? "linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(139,92,246,0.15) 100%)"
                   : "transparent",
-                border: isActive ? "1px solid rgba(99,102,241,0.3)" : "1px solid transparent",
-                color: isActive ? "#a5b4fc" : "#94a3b8",
+                border: active ? "1px solid rgba(99,102,241,0.3)" : "1px solid transparent",
+                color: active ? "#a5b4fc" : "#94a3b8",
               })}
             >
               <Icon
@@ -142,15 +141,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150`
+              className={({ isActive: active }) =>
+                `flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150 ${active ? "active" : ""}`
               }
-              style={({ isActive }) => ({
-                background: isActive
+              style={({ isActive: active }) => ({
+                background: active
                   ? "linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(139,92,246,0.15) 100%)"
                   : "transparent",
-                border: isActive ? "1px solid rgba(99,102,241,0.3)" : "1px solid transparent",
-                color: isActive ? "#a5b4fc" : "#94a3b8",
+                border: active ? "1px solid rgba(99,102,241,0.3)" : "1px solid transparent",
+                color: active ? "#a5b4fc" : "#94a3b8",
               })}
             >
               <Icon size={18} style={{ flexShrink: 0 }} />

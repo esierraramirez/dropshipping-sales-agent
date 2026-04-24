@@ -1,18 +1,22 @@
 import { useState, useEffect } from "react";
 import {
-  MessageCircle,
-  Shield,
   CheckCircle2,
   AlertCircle,
   Copy,
-  ExternalLink,
   RefreshCw,
   Wifi,
   WifiOff,
-  ChevronRight,
   Info,
 } from "lucide-react";
 import { api, ApiError } from "../lib/api";
+
+interface MessengerConnection {
+  is_connected: boolean;
+  page_id: string;
+  page_name: string | null;
+  page_access_token: string;
+  verify_token: string;
+}
 
 export function MessengerPage() {
   const [connected, setConnected] = useState(false);
@@ -36,7 +40,7 @@ export function MessengerPage() {
         const data = await api.get(
           "/messenger/me",
           true
-        );
+        ) as MessengerConnection;
         
         if (data.is_connected) {
           setConnected(true);
@@ -95,7 +99,7 @@ export function MessengerPage() {
           verify_token: form.verifyToken,
         },
         true
-      );
+      ) as MessengerConnection;
 
       if (response.is_connected) {
         setConnected(true);
