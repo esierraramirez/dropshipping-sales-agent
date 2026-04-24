@@ -17,7 +17,7 @@ from app.services.whatsapp_service import (
 
 router = APIRouter()
 
-
+# Guarda o actualiza las credenciales de WhatsApp del vendor (token, phone ID).
 @router.put("/whatsapp/me", response_model=WhatsAppConnectionResponse)
 def upsert_my_whatsapp_connection(
     payload: WhatsAppConnectionRequest,
@@ -31,7 +31,7 @@ def upsert_my_whatsapp_connection(
         payload=payload
     )
 
-
+# Obtiene la configuración de WhatsApp conectada del vendor.
 @router.get("/whatsapp/me", response_model=WhatsAppConnectionResponse)
 def get_my_whatsapp_connection(
     db: Session = Depends(get_db),
@@ -40,7 +40,7 @@ def get_my_whatsapp_connection(
     """Get WhatsApp connection for current vendor"""
     return get_whatsapp_connection_by_vendor(db=db, vendor=current_vendor)
 
-
+# Verifica el webhook de WhatsApp con Meta (desafío para validación).
 @router.get("/whatsapp/webhook")
 def verify_whatsapp_webhook(
     hub_mode: str = Query(alias="hub.mode"),
@@ -62,7 +62,7 @@ def verify_whatsapp_webhook(
 
     return PlainTextResponse(content="Invalid verification token", status_code=403)
 
-
+# Recibe mensajes de WhatsApp de Meta y los procesa con el agente IA.
 @router.post("/whatsapp/webhook")
 async def receive_whatsapp_webhook(
     request: Request,

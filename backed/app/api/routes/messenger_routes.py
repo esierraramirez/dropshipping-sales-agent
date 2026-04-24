@@ -17,7 +17,7 @@ from app.services.messenger_service import (
 
 router = APIRouter()
 
-
+# Guarda o actualiza las credenciales de Messenger del vendor (page ID, token).
 @router.put("/messenger/me", response_model=MessengerConnectionResponse)
 def upsert_my_messenger_connection(
     payload: MessengerConnectionRequest,
@@ -31,7 +31,7 @@ def upsert_my_messenger_connection(
         payload=payload
     )
 
-
+# Obtiene la configuración de Messenger conectada del vendor.
 @router.get("/messenger/me", response_model=MessengerConnectionResponse)
 def get_my_messenger_connection(
     db: Session = Depends(get_db),
@@ -40,7 +40,7 @@ def get_my_messenger_connection(
     """Get Messenger connection for current vendor"""
     return get_messenger_connection_by_vendor(db=db, vendor=current_vendor)
 
-
+# Verifica el webhook de Messenger con Meta (desafío para validación).
 @router.get("/messenger/webhook")
 def verify_messenger_webhook(
     hub_mode: str = Query(alias="hub.mode"),
@@ -62,7 +62,7 @@ def verify_messenger_webhook(
 
     return PlainTextResponse(content="Invalid verification token", status_code=403)
 
-
+# Recibe mensajes de Messenger de Meta y los procesa con el agente IA.
 @router.post("/messenger/webhook")
 async def receive_messenger_webhook(
     request: Request,

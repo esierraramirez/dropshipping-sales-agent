@@ -14,7 +14,7 @@ from app.services.auth_service import register_vendor, login_vendor, get_vendor_
 
 router = APIRouter()
 
-
+# Registra un nuevo vendor (empresa) con email y contraseña.
 @router.post("/auth/register", response_model=AuthResponse)
 def auth_register(
     payload: RegisterVendorRequest,
@@ -23,7 +23,7 @@ def auth_register(
     result = register_vendor(db=db, payload=payload)
     return result
 
-
+# Autentica un vendor y retorna JWT token para acceso a endpoints protegidos.
 @router.post("/auth/login", response_model=AuthResponse)
 def auth_login(
     payload: LoginRequest,
@@ -32,7 +32,7 @@ def auth_login(
     result = login_vendor(db=db, payload=payload)
     return result
 
-
+# Obtiene el perfil del vendor autenticado usando el JWT token.
 @router.get("/auth/me", response_model=VendorProfileResponse)
 def auth_me(
     authorization: str = Header(...),

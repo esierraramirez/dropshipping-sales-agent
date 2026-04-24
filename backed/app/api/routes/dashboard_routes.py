@@ -9,7 +9,7 @@ from app.services.dashboard_service import build_dashboard_data
 
 router = APIRouter()
 
-
+# Retorna el dashboard con estadísticas del vendor (órdenes, productos, catálogo, WhatsApp).
 @router.get("/dashboard/me", response_model=DashboardResponse)
 def get_my_dashboard(
     db: Session = Depends(get_db),

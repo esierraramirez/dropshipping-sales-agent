@@ -7,7 +7,7 @@ from app.services.retrieval_service import retrieve_vendor_context
 
 router = APIRouter()
 
-
+# Busca productos en el catálogo usando búsqueda semántica (RAG/embeddings).
 @router.post("/retrieval/search", response_model=RetrievalResponse)
 def retrieval_search(
     payload: RetrievalRequest,

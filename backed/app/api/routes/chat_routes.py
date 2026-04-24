@@ -9,7 +9,7 @@ from app.services.chat_service import process_chat_message
 
 router = APIRouter()
 
-
+# Envía un mensaje al agente IA y recibe la respuesta (con posible creación de orden).
 @router.post("/chat/me", response_model=ChatResponse)
 def chat_with_agent(
     payload: ChatRequest,

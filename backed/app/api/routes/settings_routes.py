@@ -35,6 +35,7 @@ def get_current_vendor_id(authorization: str) -> int:
         raise HTTPException(status_code=401, detail="No fue posible validar el token.")
 
 
+# Obtiene la configuración del agente del vendor (horarios, tono, habilitación).
 @router.get("/settings/me", response_model=VendorSettingsResponse)
 def get_my_settings(
     authorization: str = Header(...),
@@ -44,7 +45,7 @@ def get_my_settings(
     settings_obj = get_settings_by_vendor_id(db=db, vendor_id=vendor_id)
     return settings_obj
 
-
+# Actualiza la configuración del agente (horarios de atención, tono, mensajes fuera de horario).
 @router.put("/settings/me", response_model=VendorSettingsResponse)
 def update_my_settings(
     payload: VendorSettingsUpsertRequest,

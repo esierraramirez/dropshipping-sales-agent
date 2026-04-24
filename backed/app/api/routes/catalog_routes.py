@@ -22,7 +22,7 @@ from app.models.product import Product
 
 router = APIRouter()
 
-
+# Carga un archivo Excel/CSV con el catálogo de productos del vendor.
 @router.post("/catalog/upload/me", response_model=CatalogUploadResponse)
 def upload_my_catalog(
     file: UploadFile = File(...),
@@ -30,14 +30,14 @@ def upload_my_catalog(
 ):
     return process_catalog_upload_for_vendor(file=file, vendor=current_vendor)
 
-
+# Normaliza y valida el catálogo subido (valida campos, formatos, precios).
 @router.post("/catalog/normalize/me", response_model=CatalogNormalizationResponse)
 def normalize_my_catalog(
     current_vendor: Vendor = Depends(get_current_vendor),
 ):
     return normalize_catalog_for_authenticated_vendor(vendor=current_vendor)
 
-
+# Guarda el catálogo normalizado en la base de datos.
 @router.post("/catalog/save/me")
 def save_my_catalog(
     db: Session = Depends(get_db),
@@ -45,7 +45,7 @@ def save_my_catalog(
 ):
     return save_authenticated_vendor_catalog_to_db(db=db, vendor=current_vendor)
 
-
+# Lista todos los productos del vendor autenticado.
 @router.get("/catalog/products/me", response_model=ProductListResponse)
 def get_my_products(
     db: Session = Depends(get_db),
@@ -53,7 +53,7 @@ def get_my_products(
 ):
     return list_authenticated_vendor_products(db=db, vendor=current_vendor)
 
-
+# Obtiene los detalles completos de un producto específico.
 @router.get("/catalog/products/{product_id}")
 def get_product_detail(
     product_id: int,
@@ -79,7 +79,7 @@ def get_product_detail(
         "stock_status": product.stock_status,
     }
 
-
+# Actualiza campos de un producto (nombre, precio, stock, categoría).
 @router.patch("/catalog/products/{product_id}")
 def update_product(
     product_id: int,
@@ -115,7 +115,7 @@ def update_product(
         }
     }
 
-
+# Elimina un producto del catálogo del vendor.
 @router.delete("/catalog/products/{product_id}")
 def delete_product(
     product_id: int,
@@ -139,7 +139,7 @@ def delete_product(
         "product_id": product_id
     }
 
-
+# Construye los embeddings semánticos del catálogo para búsqueda RAG (crítico para el agente).
 @router.post("/catalog/build-knowledge-base/me", response_model=KnowledgeBaseBuildResponse)
 def build_my_knowledge_base(
     db: Session = Depends(get_db),

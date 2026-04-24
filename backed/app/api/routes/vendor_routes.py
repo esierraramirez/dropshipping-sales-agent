@@ -7,8 +7,10 @@ from app.schemas.vendor_schema import VendorResponse
 
 router = APIRouter()
 
-
+# Lista todos los vendors (empresas) registradas en el sistema (sin autenticación).
 @router.get("/vendors", response_model=list[VendorResponse])
-def list_vendors(db: Session = Depends(get_db)):
+def list_vendors(
+    db: Session = Depends(get_db)
+):
     vendors = db.query(Vendor).order_by(Vendor.name.asc()).all()
     return vendors

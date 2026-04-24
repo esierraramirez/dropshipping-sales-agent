@@ -11,7 +11,7 @@ from app.schemas.vendor_schema import VendorResponse, VendorUpdateRequest
 
 router = APIRouter()
 
-
+# Obtiene la información completa de la empresa del vendor autenticado.
 @router.get("/empresa/me", response_model=VendorResponse)
 def get_my_empresa(
     db: Session = Depends(get_db),
@@ -20,7 +20,7 @@ def get_my_empresa(
     """Obtener información completa de la empresa"""
     return current_vendor
 
-
+# Actualiza datos de la empresa (RFC, sector, teléfono, website, dirección, etc).
 @router.patch("/empresa/me", response_model=VendorResponse)
 def update_my_empresa(
     payload: VendorUpdateRequest,
@@ -53,7 +53,7 @@ def update_my_empresa(
     db.refresh(current_vendor)
     return current_vendor
 
-
+# Retorna estadísticas de la empresa (total productos, órdenes, clientes únicos).
 @router.get("/empresa/me/stats")
 def get_empresa_stats(
     db: Session = Depends(get_db),
