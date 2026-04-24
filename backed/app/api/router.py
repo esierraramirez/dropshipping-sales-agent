@@ -12,6 +12,7 @@ from app.api.routes.order_routes import router as order_router
 from app.api.routes.whatsapp_routes import router as whatsapp_router
 from app.api.routes.messenger_routes import router as messenger_router
 from app.api.routes.dashboard_routes import router as dashboard_router
+from app.api.routes.audit_routes import router as audit_router
 
 api_router = APIRouter()
 api_router.include_router(health_router, tags=["health"])
@@ -23,6 +24,7 @@ api_router.include_router(retrieval_router, tags=["retrieval"])
 api_router.include_router(chat_router, tags=["chat"])
 api_router.include_router(order_router, tags=["orders"])
 api_router.include_router(whatsapp_router, tags=["whatsapp"])
+api_router.include_router(audit_router, tags=["audit"])
 api_router.include_router(messenger_router, tags=["messenger"])
 api_router.include_router(dashboard_router, tags=["dashboard"])
 api_router.include_router(catalog_router, tags=["catalog"])

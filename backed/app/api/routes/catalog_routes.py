@@ -62,7 +62,8 @@ def get_product_detail(
 ):
     product = db.query(Product).filter(
         Product.id == product_id,
-        Product.vendor_id == current_vendor.id
+        Product.vendor_id == current_vendor.id,
+        Product.is_deleted == False
     ).first()
     
     if not product:
@@ -89,7 +90,8 @@ def update_product(
 ):
     product = db.query(Product).filter(
         Product.id == product_id,
-        Product.vendor_id == current_vendor.id
+        Product.vendor_id == current_vendor.id,
+        Product.is_deleted == False
     ).first()
     
     if not product:
@@ -122,21 +124,39 @@ def delete_product(
     db: Session = Depends(get_db),
     current_vendor: Vendor = Depends(get_current_vendor),
 ):
+    from app.services.audit_service import log_delete
+    from datetime import datetime
+    
     product = db.query(Product).filter(
         Product.id == product_id,
-        Product.vendor_id == current_vendor.id
+        Product.vendor_id == current_vendor.id,
+        Product.is_deleted == False
     ).first()
     
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
     product_name = product.name
-    db.delete(product)
+    
+    # Registrar en auditoría ANTES de eliminar
+    log_delete(
+        db=db,
+        entity_type="Product",
+        entity_id=product_id,
+        entity_object=product,
+        vendor=current_vendor,
+        description=f"Producto eliminado: {product_name} (SKU: {product.product_id})"
+    )
+    
+    # Soft delete: marcar como eliminado sin borrar datos
+    product.is_deleted = True
+    product.deleted_at = datetime.utcnow()
     db.commit()
     
     return {
-        "message": f"Producto '{product_name}' eliminado correctamente",
-        "product_id": product_id
+        "message": f"Producto '{product_name}' eliminado correctamente (datos archivados para auditoría)",
+        "product_id": product_id,
+        "archived_at": product.deleted_at.isoformat()
     }
 
 # Construye los embeddings semánticos del catálogo para búsqueda RAG (crítico para el agente).

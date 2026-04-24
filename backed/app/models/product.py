@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Float, Integer, ForeignKey, Text
+from sqlalchemy import String, Float, Integer, ForeignKey, Text, Boolean, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.db.session import Base
@@ -32,5 +33,11 @@ class Product(Base):
     specs: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     variants: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     source: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+
+    # Auditoría y soft delete
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
 
     vendor = relationship("Vendor", back_populates="products")

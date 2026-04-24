@@ -17,7 +17,10 @@ def build_dashboard_data(db: Session, vendor: Vendor) -> dict:
 
     total_products = (
         db.query(Product)
-        .filter(Product.vendor_id == vendor.id)
+        .filter(
+            Product.vendor_id == vendor.id,
+            Product.is_deleted == False
+        )
         .count()
     )
 

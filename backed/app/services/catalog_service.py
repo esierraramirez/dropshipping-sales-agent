@@ -240,7 +240,27 @@ def save_normalized_catalog_to_db(db: Session, vendor_name: str) -> dict:
         )
 
     # Limpiar productos previos del vendedor para reemplazar el catálogo actual
-    db.query(Product).filter(Product.vendor_id == vendor.id).delete()
+    from app.services.audit_service import log_delete
+    from datetime import datetime
+    
+    products_to_delete = db.query(Product).filter(
+        Product.vendor_id == vendor.id,
+        Product.is_deleted == False
+    ).all()
+    
+    # Soft delete: marcar todos como eliminados y registrar en auditoría
+    for product in products_to_delete:
+        log_delete(
+            db=db,
+            entity_type="Product",
+            entity_id=product.id,
+            entity_object=product,
+            vendor=vendor,
+            description=f"Producto archivado por carga de nuevo catálogo: {product.name}"
+        )
+        product.is_deleted = True
+        product.deleted_at = datetime.utcnow()
+    
     db.commit()
 
     inserted = 0
@@ -314,7 +334,10 @@ def list_products_by_vendor(db: Session, vendor_name: str) -> dict:
     if not vendor:
         raise HTTPException(status_code=404, detail="Vendedor no encontrado.")
 
-    products = db.query(Product).filter(Product.vendor_id == vendor.id).order_by(Product.name.asc()).all()
+    products = db.query(Product).filter(
+        Product.vendor_id == vendor.id,
+        Product.is_deleted == False
+    ).order_by(Product.name.asc()).all()
 
     return {
         "vendor_name": vendor.name,
@@ -329,7 +352,10 @@ def build_knowledge_base_for_vendor(db: Session, vendor_name: str) -> dict:
     if not vendor:
         raise HTTPException(status_code=404, detail="Vendedor no encontrado.")
 
-    products = db.query(Product).filter(Product.vendor_id == vendor.id).all()
+    products = db.query(Product).filter(
+        Product.vendor_id == vendor.id,
+        Product.is_deleted == False
+    ).all()
     if not products:
         raise HTTPException(status_code=404, detail="No hay productos cargados para este vendedor.")
 

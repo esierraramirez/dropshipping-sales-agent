@@ -7,6 +7,8 @@ from app.models.vendor_settings import VendorSettings
 from app.models.product import Product
 from app.models.order import Order
 from app.models.whatsapp_connection import WhatsAppConnection
+from app.models.messenger_connection import MessengerConnection
+from app.models.audit_log import AuditLog
 
 if __name__ == "__main__":
     print("🔄 Dropping all existing tables...")
