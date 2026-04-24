@@ -3,9 +3,7 @@ def build_sales_agent_system_prompt(
     tone_instruction: str,
     context_block: str
 ) -> str:
-    """
-    Construye el prompt de sistema para el agente.
-    """
+    # Construye el prompt de sistema (instrucciones + catálogo) para el agente IA.
     return f"""
 # Sistema de IA - Vendedor Experto de {vendor_name}
 

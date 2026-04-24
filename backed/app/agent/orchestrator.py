@@ -15,14 +15,12 @@ from app.schemas.chat_schema import PurchaseContext, CartItem
 
 
 def get_vendor_settings(db: Session, vendor_id: int) -> VendorSettings | None:
+    # Obtiene la configuración del vendor (horarios, tono, habilitación).
     return db.query(VendorSettings).filter(VendorSettings.vendor_id == vendor_id).first()
 
 
 def _build_enhanced_query(user_message: str, history: Optional[List[dict]] = None) -> str:
-    """
-    Si hay historial conversacional, agrega el contexto anterior 
-    para mejorar la búsqueda de similitud.
-    """
+    # Mejora la búsqueda semántica agregando contexto del historial conversacional.
     if not history or len(history) == 0:
         return user_message
     
@@ -40,7 +38,7 @@ def _build_enhanced_query(user_message: str, history: Optional[List[dict]] = Non
 
 
 def _detect_purchase_keywords(text: str) -> bool:
-    """Detecta palabras clave de intención de compra."""
+    # Detecta palabras clave de intención de compra (DEPRECADA - no se usa).
     purchase_keywords = [
         r"\bquiero\b",
         r"\bme interesa\b",
@@ -70,9 +68,7 @@ def _create_order_from_response(
     agent_response: str,
     purchase_context: Optional[PurchaseContext]
 ) -> Optional[dict]:
-    """
-    Intenta crear una orden si el contexto está completo y el cliente confirmó.
-    """
+    # Crea una orden automáticamente cuando el agente confirma la venta y tiene datos del cliente.
     if not purchase_context:
         print("  └─ No hay purchase_context")
         return None
@@ -168,10 +164,7 @@ def generate_agent_reply(
     purchase_context: Optional[dict] = None,
     top_k: int = 3
 ) -> dict:
-    """
-    Orquesta todo el flujo del agente:
-    settings -> horario -> retrieval mejorado -> prompt -> LLM -> respuesta -> posible creación de orden
-    """
+    # Orquesta el flujo: carga settings → verifica horario → busca contexto → LLM → crea orden si aplica.
     settings = get_vendor_settings(db=db, vendor_id=vendor.id)
 
     # Configuración por defecto si no existe
