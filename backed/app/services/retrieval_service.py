@@ -54,6 +54,9 @@ def retrieve_vendor_context(vendor: Vendor, query: str, top_k: int = 3) -> dict:
     if not results and _is_broad_catalog_query(query):
         results = _load_catalog_preview(kb_path=kb_path, top_k=top_k)
 
+    if results:
+        results = _augment_with_related_products(kb_path=kb_path, results=results, top_k=top_k)
+
     return {
         "vendor_name": vendor.name,
         "query": query,
@@ -88,6 +91,41 @@ def _load_catalog_preview(kb_path: str, top_k: int) -> list[dict]:
             }
         )
     return preview
+
+
+def _augment_with_related_products(
+    kb_path: str,
+    results: list[dict],
+    top_k: int,
+) -> list[dict]:
+    if len(results) >= top_k:
+        return results[:top_k]
+
+    documents = load_knowledge_base(kb_path)
+    selected_ids = {item.get("product_id") for item in results}
+    categories = {item.get("category") for item in results if item.get("category")}
+
+    augmented = list(results)
+    for document in documents:
+        if len(augmented) >= top_k:
+            break
+        if document.get("product_id") in selected_ids:
+            continue
+        if document.get("category") not in categories:
+            continue
+
+        augmented.append(
+            {
+                "product_id": document.get("product_id"),
+                "name": document.get("name"),
+                "category": document.get("category"),
+                "score": 0,
+                "content": document.get("content", ""),
+            }
+        )
+        selected_ids.add(document.get("product_id"))
+
+    return augmented[:top_k]
 
 
 def build_context_block(results: list[dict]) -> str:

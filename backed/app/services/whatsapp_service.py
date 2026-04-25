@@ -174,7 +174,7 @@ async def process_incoming_whatsapp_message(db: Session, payload: dict) -> dict:
         db=db,
         vendor=vendor,
         user_message=user_text,
-        top_k=3
+        top_k=4
     )
 
     await send_whatsapp_text_message(

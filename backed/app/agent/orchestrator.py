@@ -65,6 +65,14 @@ def _is_catalog_or_sales_query(text: str) -> bool:
         "stock",
         "tienen",
         "tienes",
+        "hay",
+        "busco",
+        "quiero",
+        "necesito",
+        "manejan",
+        "manejamos",
+        "muestrame",
+        "mostrar",
         "venden",
         "vendes",
         "recomiendas",
@@ -103,6 +111,40 @@ def _build_general_reply(vendor_name: str, user_message: str) -> str:
     return "Claro 😊 Estoy aquí para ayudarte. Cuéntame qué estás buscando o qué necesitas saber."
 
 
+def _extract_identity(text: str) -> tuple[str | None, str | None]:
+    normalized = _normalize_text(text)
+    gender = None
+    if re.search(r"\b(hombre|masculino|varon)\b", normalized):
+        gender = "masculino"
+    elif re.search(r"\b(mujer|femenino)\b", normalized):
+        gender = "femenino"
+
+    name = None
+    match = re.search(
+        r"\b(?:soy|me llamo|mi nombre es)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if match:
+        candidate = match.group(1).strip(" ,.;:")
+        if _normalize_text(candidate) not in {"hombre", "mujer", "masculino", "femenino"}:
+            name = candidate[:1].upper() + candidate[1:]
+
+    return name, gender
+
+
+def _build_identity_reply(vendor_name: str, name: str | None, gender: str | None) -> str:
+    if name and gender:
+        suffix = "listo" if gender == "masculino" else "lista"
+        return f"¡Mucho gusto, {name}! 😊 Perfecto, te trataré en {gender}. Ya estoy {suffix} para ayudarte con {vendor_name}."
+    if name:
+        return f"¡Mucho gusto, {name}! 😊 ¿Prefieres que te trate en masculino o femenino?"
+    if gender:
+        suffix = "claro" if gender == "masculino" else "clara"
+        return f"Perfecto, lo tengo presente 😊 Para atenderte mejor, ¿me regalas tu nombre?"
+    return "Perfecto 😊 ¿Me regalas tu nombre y me dices si prefieres que te trate en masculino o femenino?"
+
+
 def _is_general_social_message(text: str) -> bool:
     normalized = _normalize_text(text)
     social_phrases = {
@@ -123,7 +165,11 @@ def _is_general_social_message(text: str) -> bool:
 
 
 def _build_welcome_reply(vendor_name: str) -> str:
-    return f"¡Hola! 👋 Soy el asistente de {vendor_name}. ¿En qué puedo ayudarte hoy?"
+    return (
+        f"¡Hola! 👋 Soy el asistente de {vendor_name}. "
+        "Qué gusto atenderte 😊 ¿Me regalas tu nombre y me dices si prefieres que te trate en masculino o femenino? "
+        "Así puedo ayudarte de forma más cercana."
+    )
 
 
 def get_vendor_settings(db: Session, vendor_id: int) -> VendorSettings | None:
@@ -322,6 +368,16 @@ def generate_agent_reply(
             "user_message": user_message,
             "agent_response": _build_welcome_reply(vendor.name),
             "context_used": "Saludo inicial. No se utilizó contexto del catálogo.",
+            "matches_found": 0,
+        }
+
+    name, gender = _extract_identity(user_message)
+    if name or gender:
+        return {
+            "vendor_name": vendor.name,
+            "user_message": user_message,
+            "agent_response": _build_identity_reply(vendor.name, name, gender),
+            "context_used": "Datos de trato del cliente. No se utilizó contexto del catálogo.",
             "matches_found": 0,
         }
 

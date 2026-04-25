@@ -1,7 +1,13 @@
 import json
 import re
+import unicodedata
 from pathlib import Path
 from typing import List, Dict, Any
+
+
+def normalize_text(text: str) -> str:
+    text = unicodedata.normalize("NFKD", text.lower())
+    return "".join(char for char in text if not unicodedata.combining(char))
 
 
 def tokenize(text: str) -> List[str]:
@@ -11,8 +17,8 @@ def tokenize(text: str) -> List[str]:
     - sin signos
     - elimina palabras muy cortas
     """
-    text = text.lower()
-    text = re.sub(r"[^a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ\s]", " ", text)
+    text = normalize_text(text)
+    text = re.sub(r"[^a-zA-Z0-9ñü\s]", " ", text)
     tokens = [token.strip() for token in text.split() if len(token.strip()) > 2]
     return tokens
 
@@ -57,7 +63,7 @@ def retrieve_documents(
     matches: List[Dict[str, Any]] = []
 
     for entry in index_entries:
-        product_keywords = set(entry.get("keywords", []))
+        product_keywords = {normalize_text(keyword) for keyword in entry.get("keywords", [])}
         score = 0
 
         for token in query_tokens:
@@ -69,6 +75,18 @@ def retrieve_documents(
             document = doc_map.get(product_id)
 
             if document:
+                searchable_name = normalize_text(document.get("name") or "")
+                searchable_category = normalize_text(document.get("category") or "")
+                searchable_product_id = normalize_text(product_id or "")
+
+                for token in query_tokens:
+                    if token in searchable_name:
+                        score += 5
+                    if token in searchable_category:
+                        score += 3
+                    if token in searchable_product_id:
+                        score += 2
+
                 matches.append({
                     "product_id": product_id,
                     "name": document.get("name"),
@@ -79,5 +97,9 @@ def retrieve_documents(
 
     # Ordenar por score descendente
     matches.sort(key=lambda item: item["score"], reverse=True)
+
+    strong_matches = [item for item in matches if item["score"] >= 4]
+    if strong_matches:
+        return strong_matches[:top_k]
 
     return matches[:top_k]

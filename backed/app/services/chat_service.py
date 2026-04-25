@@ -12,13 +12,12 @@ def process_chat_message(
     history: Optional[List[dict]] = None,
     purchase_context: Optional[dict] = None
 ) -> dict:
-    # top_k=2 para optimizar tokens (vs 3)
-    # Solo recupera los 2 productos más relevantes para ahorrar contexto
+    # Recupera varias opciones para permitir recomendaciones relacionadas.
     return generate_agent_reply(
         db=db,
         vendor=vendor,
         user_message=message,
         conversation_history=history,  # Pasa el historial si está disponible
         purchase_context=purchase_context,  # Pasa el contexto de compra
-        top_k=2  # Reducido de 3 para ahorrar tokens
+        top_k=4
     )
