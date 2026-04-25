@@ -14,6 +14,12 @@ from app.agent.prompts import build_sales_agent_system_prompt
 from app.schemas.chat_schema import PurchaseContext, CartItem
 
 
+NO_KNOWLEDGE_REPLY = (
+    "No tengo esa informacion disponible en la base de conocimiento de esta empresa. "
+    "Puedo ayudarte con productos o datos que esten registrados en el catalogo."
+)
+
+
 def get_vendor_settings(db: Session, vendor_id: int) -> VendorSettings | None:
     # Obtiene la configuración del vendor (horarios, tono, habilitación).
     return db.query(VendorSettings).filter(VendorSettings.vendor_id == vendor_id).first()
@@ -206,6 +212,15 @@ def generate_agent_reply(
     )
 
     results = retrieval_result["results"]
+    if not retrieval_result.get("knowledge_base_ready") or not results:
+        return {
+            "vendor_name": vendor.name,
+            "user_message": user_message,
+            "agent_response": NO_KNOWLEDGE_REPLY,
+            "context_used": "No se encontraron datos relevantes en la base de conocimiento.",
+            "matches_found": 0,
+        }
+
     context_block = build_context_block(results)
     tone_instruction = resolve_tone_instruction(tone)
 

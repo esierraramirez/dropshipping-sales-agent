@@ -28,7 +28,15 @@ class Settings(BaseModel):
     OPENAI_MAX_OUTPUT_TOKENS: int = int(os.getenv("OPENAI_MAX_OUTPUT_TOKENS", "300"))  # Respuestas concisas
     OPENAI_VERBOSITY: str = os.getenv("OPENAI_VERBOSITY", "medium")  # "medium" es el único soportado en gpt-5.3
     OPENAI_REASONING_EFFORT: str = os.getenv("OPENAI_REASONING_EFFORT", "medium")  # "medium" es el único soportado en gpt-5.3
+    
+    # WhatsApp Configuration
     WHATSAPP_API_VERSION: str = os.getenv("WHATSAPP_API_VERSION", "v23.0")
+    WHATSAPP_APP_ID: str = os.getenv("WHATSAPP_APP_ID", "")
+    WHATSAPP_APP_SECRET: str = os.getenv("WHATSAPP_APP_SECRET", "")
+    WHATSAPP_SYSTEM_USER_TOKEN: str = os.getenv("WHATSAPP_SYSTEM_USER_TOKEN", "")
+    WHATSAPP_BUSINESS_ACCOUNT_ID: str = os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
+    WHATSAPP_PHONE_NUMBER_ID: str = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    WHATSAPP_PHONE_NUMBER: str = os.getenv("WHATSAPP_PHONE_NUMBER", "")
 
 
 settings = Settings()

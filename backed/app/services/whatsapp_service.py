@@ -37,6 +37,18 @@ def upsert_whatsapp_connection(
 ) -> WhatsAppConnection:
     connection = get_or_create_whatsapp_connection(db=db, vendor=vendor)
 
+    duplicate_connections = (
+        db.query(WhatsAppConnection)
+        .filter(
+            WhatsAppConnection.phone_number_id == payload.phone_number_id,
+            WhatsAppConnection.vendor_id != vendor.id,
+            WhatsAppConnection.is_connected.is_(True),
+        )
+        .all()
+    )
+    for duplicate in duplicate_connections:
+        duplicate.is_connected = False
+
     connection.phone_number = payload.phone_number
     connection.phone_number_id = payload.phone_number_id
     connection.business_account_id = payload.business_account_id
@@ -66,7 +78,14 @@ def get_whatsapp_connection_by_vendor(db: Session, vendor: Vendor) -> WhatsAppCo
 def get_whatsapp_connection_by_phone_number_id(db: Session, phone_number_id: str) -> WhatsAppConnection | None:
     return (
         db.query(WhatsAppConnection)
-        .filter(WhatsAppConnection.phone_number_id == phone_number_id)
+        .filter(
+            WhatsAppConnection.phone_number_id == phone_number_id,
+            WhatsAppConnection.is_connected.is_(True),
+        )
+        .order_by(
+            WhatsAppConnection.connected_at.desc().nullslast(),
+            WhatsAppConnection.id.desc(),
+        )
         .first()
     )
 
@@ -137,13 +156,19 @@ async def process_incoming_whatsapp_message(db: Session, payload: dict) -> dict:
     except Exception:
         raise HTTPException(status_code=400, detail="Payload de WhatsApp inválido.")
 
+    print(f"[WHATSAPP] Incoming message for phone_number_id={phone_number_id} from={from_phone}")
+
     connection = get_whatsapp_connection_by_phone_number_id(db=db, phone_number_id=phone_number_id)
     if not connection:
+        print(f"[WHATSAPP] No connected vendor found for phone_number_id={phone_number_id}")
         raise HTTPException(status_code=404, detail="No se encontró empresa asociada a este número de WhatsApp.")
 
     vendor = connection.vendor
     if not vendor:
+        print(f"[WHATSAPP] Connection id={connection.id} has no vendor")
         raise HTTPException(status_code=404, detail="No se encontró la empresa asociada a la conexión.")
+
+    print(f"[WHATSAPP] Routed to vendor_id={vendor.id} vendor_name={vendor.name!r}")
 
     orchestrated = generate_agent_reply(
         db=db,
