@@ -56,7 +56,7 @@ class OpenAIAdapter:
         """
         try:
             # Truncar inputs para evitar exceder límites y gastar tokens unnecessarios
-            system_prompt = self._truncate_input(system_prompt, max_chars=2000)
+            system_prompt = self._truncate_input(system_prompt, max_chars=8000)
             user_message = self._truncate_input(user_message, max_chars=1000)
             
             response = self.client.responses.create(

@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 import json
 import re
+import unicodedata
 
 from app.models.vendor import Vendor
 from app.models.vendor_settings import VendorSettings
@@ -15,9 +16,114 @@ from app.schemas.chat_schema import PurchaseContext, CartItem
 
 
 NO_KNOWLEDGE_REPLY = (
-    "No tengo esa informacion disponible en la base de conocimiento de esta empresa. "
-    "Puedo ayudarte con productos o datos que esten registrados en el catalogo."
+    "Por ahora no tengo esa informacion disponible en el catalogo. "
+    "Si quieres, puedo ayudarte con los productos y datos que tengo registrados."
 )
+
+
+def _is_simple_greeting(text: str) -> bool:
+    normalized = _normalize_text(text)
+    greeting_words = {
+        "hola",
+        "buenas",
+        "buen",
+        "dia",
+        "dias",
+        "tarde",
+        "tardes",
+        "noche",
+        "noches",
+        "hey",
+        "hello",
+        "saludos",
+    }
+    words = normalized.split()
+    return bool(words) and all(word in greeting_words for word in words)
+
+
+def _normalize_text(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text.lower())
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    normalized = re.sub(r"[^a-z0-9\s]", " ", normalized)
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+def _is_catalog_or_sales_query(text: str) -> bool:
+    normalized_words = set(_normalize_text(text).split())
+    catalog_terms = {
+        "catalogo",
+        "menu",
+        "producto",
+        "productos",
+        "precio",
+        "precios",
+        "cuesta",
+        "vale",
+        "valor",
+        "disponible",
+        "disponibilidad",
+        "stock",
+        "tienen",
+        "tienes",
+        "venden",
+        "vendes",
+        "recomiendas",
+        "recomiendame",
+        "comprar",
+        "compra",
+        "pedido",
+        "orden",
+        "talla",
+        "tallas",
+        "color",
+        "colores",
+        "envio",
+        "envios",
+        "domicilio",
+        "garantia",
+        "devolucion",
+        "cambio",
+        "pagar",
+        "pago",
+    }
+    return bool(normalized_words & catalog_terms)
+
+
+def _build_general_reply(vendor_name: str, user_message: str) -> str:
+    normalized = _normalize_text(user_message)
+    if normalized in {"gracias", "muchas gracias", "ok gracias", "listo gracias"}:
+        return "¡Con mucho gusto! 😊 Estoy aquí para ayudarte cuando lo necesites."
+
+    if normalized in {"como estas", "que tal", "como vas"}:
+        return f"¡Muy bien, gracias por preguntar! 😊 Aquí estoy para ayudarte con {vendor_name}."
+
+    if normalized in {"ok", "listo", "perfecto", "vale", "bueno"}:
+        return "Perfecto 😊 Quedo atento a lo que necesites."
+
+    return "Claro 😊 Estoy aquí para ayudarte. Cuéntame qué estás buscando o qué necesitas saber."
+
+
+def _is_general_social_message(text: str) -> bool:
+    normalized = _normalize_text(text)
+    social_phrases = {
+        "gracias",
+        "muchas gracias",
+        "ok gracias",
+        "listo gracias",
+        "como estas",
+        "que tal",
+        "como vas",
+        "ok",
+        "listo",
+        "perfecto",
+        "vale",
+        "bueno",
+    }
+    return normalized in social_phrases
+
+
+def _build_welcome_reply(vendor_name: str) -> str:
+    return f"¡Hola! 👋 Soy el asistente de {vendor_name}. ¿En qué puedo ayudarte hoy?"
 
 
 def get_vendor_settings(db: Session, vendor_id: int) -> VendorSettings | None:
@@ -210,6 +316,24 @@ def generate_agent_reply(
     if not agent_enabled:
         raise HTTPException(status_code=403, detail="El agente de esta empresa está desactivado.")
 
+    if _is_simple_greeting(user_message):
+        return {
+            "vendor_name": vendor.name,
+            "user_message": user_message,
+            "agent_response": _build_welcome_reply(vendor.name),
+            "context_used": "Saludo inicial. No se utilizó contexto del catálogo.",
+            "matches_found": 0,
+        }
+
+    if _is_general_social_message(user_message):
+        return {
+            "vendor_name": vendor.name,
+            "user_message": user_message,
+            "agent_response": _build_general_reply(vendor.name, user_message),
+            "context_used": "Conversación general. No se utilizó contexto del catálogo.",
+            "matches_found": 0,
+        }
+
     if not is_within_business_hours(business_start_hour, business_end_hour):
         return {
             "vendor_name": vendor.name,
@@ -230,6 +354,15 @@ def generate_agent_reply(
 
     results = retrieval_result["results"]
     if not retrieval_result.get("knowledge_base_ready") or not results:
+        if not _is_catalog_or_sales_query(user_message):
+            return {
+                "vendor_name": vendor.name,
+                "user_message": user_message,
+                "agent_response": _build_general_reply(vendor.name, user_message),
+                "context_used": "Conversación general. No se utilizó contexto del catálogo.",
+                "matches_found": 0,
+            }
+
         return {
             "vendor_name": vendor.name,
             "user_message": user_message,
