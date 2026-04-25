@@ -17,6 +17,7 @@ class VendorResponse(BaseModel):
     country: Optional[str]
     postal_code: Optional[str]
     description: Optional[str]
+    payment_methods: Optional[str]
 
     class Config:
         from_attributes = True
@@ -33,3 +34,4 @@ class VendorUpdateRequest(BaseModel):
     country: Optional[str] = None
     postal_code: Optional[str] = None
     description: Optional[str] = None
+    payment_methods: Optional[str] = None

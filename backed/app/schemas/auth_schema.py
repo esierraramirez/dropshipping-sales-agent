@@ -16,6 +16,7 @@ class RegisterVendorRequest(BaseModel):
     country: Optional[str] = Field("México", max_length=100)
     postal_code: Optional[str] = Field(None, max_length=20)
     description: Optional[str] = Field(None, max_length=2000)
+    payment_methods: Optional[str] = Field(None, max_length=2000)
 
 
 class LoginRequest(BaseModel):
@@ -39,6 +40,7 @@ class VendorProfileResponse(BaseModel):
     country: Optional[str]
     postal_code: Optional[str]
     description: Optional[str]
+    payment_methods: Optional[str]
 
     class Config:
         from_attributes = True

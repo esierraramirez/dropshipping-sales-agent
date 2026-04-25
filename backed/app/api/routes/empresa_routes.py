@@ -48,6 +48,8 @@ def update_my_empresa(
         current_vendor.postal_code = payload.postal_code
     if payload.description is not None:
         current_vendor.description = payload.description
+    if payload.payment_methods is not None:
+        current_vendor.payment_methods = payload.payment_methods
 
     db.commit()
     db.refresh(current_vendor)

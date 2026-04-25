@@ -147,17 +147,16 @@ const mockOrders: OrderRow[] = [
   },
 ];
 
-type OrderStatus = "pendiente" | "en_proceso" | "enviado" | "entregado" | "cancelado";
+type OrderStatus = "en_proceso" | "enviado" | "entregado" | "cancelado";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   entregado: { label: "Entregado", color: "#10b981", bg: "rgba(16,185,129,0.1)", icon: <CheckCircle2 size={12} /> },
   en_proceso: { label: "En proceso", color: "#f59e0b", bg: "rgba(245,158,11,0.1)", icon: <RefreshCw size={12} /> },
-  pendiente: { label: "Pendiente", color: "#6366f1", bg: "rgba(99,102,241,0.1)", icon: <Clock size={12} /> },
   enviado: { label: "Enviado", color: "#3b82f6", bg: "rgba(59,130,246,0.1)", icon: <Truck size={12} /> },
   cancelado: { label: "Cancelado", color: "#ef4444", bg: "rgba(239,68,68,0.1)", icon: <XCircle size={12} /> },
 };
 
-const allStatuses = ["Todos", "pendiente", "en_proceso", "enviado", "entregado", "cancelado"];
+const allStatuses = ["Todos", "en_proceso", "enviado", "entregado", "cancelado"];
 
 function StatusBadge({ status }: { status: string }) {
   const cfg = statusConfig[status];
@@ -228,14 +227,18 @@ export function OrdenesPage() {
   // Mapear estados del backend al frontend
   const mapBackendStatus = (status: string): string => {
     const mapping: Record<string, string> = {
-      pending: "pendiente",
+      pending: "en_proceso",
       confirmed: "en_proceso",
       processed: "en_proceso",
       shipped: "enviado",
       delivered: "entregado",
       cancelled: "cancelado",
+      en_proceso: "en_proceso",
+      enviado: "enviado",
+      entregado: "entregado",
+      cancelado: "cancelado",
     };
-    return mapping[status] || "pendiente";
+    return mapping[status] || "en_proceso";
   };
 
   const filtered = orders.filter((o) => {
@@ -249,13 +252,12 @@ export function OrdenesPage() {
   // Mapear estados del frontend al backend
   const mapToBackendStatus = (status: string): string => {
     const mapping: Record<string, string> = {
-      pendiente: "pending",
-      en_proceso: "processed",
-      enviado: "shipped",
-      entregado: "delivered",
-      cancelado: "cancelled",
+      en_proceso: "en_proceso",
+      enviado: "enviado",
+      entregado: "entregado",
+      cancelado: "cancelado",
     };
-    return mapping[status] || "pending";
+    return mapping[status] || "en_proceso";
   };
 
   const updateStatus = async (orderId: string, newStatus: string) => {
@@ -275,7 +277,6 @@ export function OrdenesPage() {
   };
 
   const statusCounts = {
-    pendiente: orders.filter((o) => orderStatuses[o.id] === "pendiente").length,
     en_proceso: orders.filter((o) => orderStatuses[o.id] === "en_proceso").length,
     enviado: orders.filter((o) => orderStatuses[o.id] === "enviado").length,
     entregado: orders.filter((o) => orderStatuses[o.id] === "entregado").length,
@@ -314,7 +315,7 @@ export function OrdenesPage() {
     <div className="space-y-5">
       {/* Summary cards */}
       <div className="grid grid-cols-5 gap-3">
-        {(["pendiente", "en_proceso", "enviado", "entregado", "cancelado"] as const).map((s) => {
+        {(["en_proceso", "enviado", "entregado", "cancelado"] as const).map((s) => {
           const cfg = statusConfig[s];
           return (
             <div
@@ -523,7 +524,7 @@ export function OrdenesPage() {
                   CAMBIAR ESTADO
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {(["pendiente", "en_proceso", "enviado", "entregado", "cancelado"] as const).map((s) => {
+                  {(["en_proceso", "enviado", "entregado", "cancelado"] as const).map((s) => {
                     const cfg = statusConfig[s];
                     const isActive = orderStatuses[selectedOrder.id] === s;
                     return (

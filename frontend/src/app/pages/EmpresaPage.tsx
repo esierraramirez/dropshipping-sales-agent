@@ -16,6 +16,7 @@ interface VendorData {
   country: string | null;
   postal_code: string | null;
   description: string | null;
+  payment_methods: string | null;
 }
 
 interface Stats {
@@ -94,6 +95,7 @@ export function EmpresaPage() {
     country: null,
     postal_code: null,
     description: null,
+    payment_methods: null,
   });
 
   // Cargar datos al montar
@@ -403,6 +405,29 @@ export function EmpresaPage() {
                 style={{ background: "#f8fafc", border: "1px solid #f1f5f9", fontSize: "13.5px", color: "#374151", lineHeight: 1.7, minHeight: "120px" }}
               >
                 {editData.description || <span style={{ color: "#cbd5e1" }}>Sin descripción</span>}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4">
+            <label className="block mb-1.5" style={{ fontSize: "12.5px", fontWeight: 600, color: "#475569" }}>
+              Medios de pago disponibles
+            </label>
+            {editing ? (
+              <textarea
+                value={editData.payment_methods || ""}
+                onChange={(e) => updateEditField("payment_methods", e.target.value)}
+                rows={4}
+                className="w-full rounded-xl px-4 py-2.5 outline-none resize-none"
+                style={{ background: "#f8fafc", border: "1.5px solid #6366f1", fontSize: "13.5px", color: "#0f172a" }}
+                placeholder="Ej: efectivo, transferencia, tarjeta, Nequi, Daviplata..."
+              />
+            ) : (
+              <div
+                className="rounded-xl px-4 py-3"
+                style={{ background: "#f8fafc", border: "1px solid #f1f5f9", fontSize: "13.5px", color: "#374151", lineHeight: 1.7, minHeight: "92px", whiteSpace: "pre-wrap" }}
+              >
+                {editData.payment_methods || <span style={{ color: "#cbd5e1" }}>Sin medios de pago registrados</span>}
               </div>
             )}
           </div>

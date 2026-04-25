@@ -191,17 +191,17 @@ export function AgentePage() {
     return null;
   };
 
-  const updatePurchaseContext = (userMessage: string) => {
+  const buildUpdatedPurchaseContext = (userMessage: string) => {
     const name = extractCustomerName(userMessage);
     const phone = extractPhoneNumber(userMessage);
     const address = extractAddress(userMessage);
 
-    setPurchaseContext((prev: any) => ({
-      ...prev,
-      customer_name: name || prev?.customer_name,
-      customer_phone: phone || prev?.customer_phone,
-      customer_address: address || prev?.customer_address,
-    }));
+    return {
+      ...(purchaseContext || {}),
+      customer_name: name || purchaseContext?.customer_name,
+      customer_phone: phone || purchaseContext?.customer_phone,
+      customer_address: address || purchaseContext?.customer_address,
+    };
   };
 
   const handleSend = async () => {
@@ -212,7 +212,8 @@ export function AgentePage() {
     const messageToSend = inputText.trim();
 
     // Extrae datos del mensaje del usuario y actualiza el contexto
-    updatePurchaseContext(messageToSend);
+    const nextPurchaseContext = buildUpdatedPurchaseContext(messageToSend);
+    setPurchaseContext(nextPurchaseContext);
 
     const now = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 
@@ -230,8 +231,8 @@ export function AgentePage() {
       };
 
       // Envía purchase_context actualizado
-      if (purchaseContext) {
-        payload.purchase_context = purchaseContext;
+      if (nextPurchaseContext) {
+        payload.purchase_context = nextPurchaseContext;
       }
 
       const response = await api.post<ChatResponse>(

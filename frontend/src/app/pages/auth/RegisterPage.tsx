@@ -23,6 +23,7 @@ export function RegisterPage() {
     country: "México",
     postal_code: "",
     description: "",
+    payment_methods: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -51,6 +52,7 @@ export function RegisterPage() {
           country: form.country,
           postal_code: form.postal_code || undefined,
           description: form.description || undefined,
+          payment_methods: form.payment_methods || undefined,
         },
         false
       );
@@ -179,6 +181,21 @@ export function RegisterPage() {
                     style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
                     placeholder="Cuéntanos sobre tu negocio..."
                     rows={3}
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1.5" style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+                    Medios de pago disponibles
+                  </label>
+                  <textarea
+                    name="payment_methods"
+                    value={form.payment_methods}
+                    onChange={handleChange}
+                    className="w-full rounded-xl px-4 py-3 outline-none resize-none"
+                    style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", fontSize: "14px", color: "#0f172a" }}
+                    placeholder="Ej: efectivo, transferencia, tarjeta, Nequi, Daviplata..."
+                    rows={2}
                   />
                 </div>
               </div>

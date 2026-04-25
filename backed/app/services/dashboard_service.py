@@ -34,11 +34,10 @@ def build_dashboard_data(db: Session, vendor: Vendor) -> dict:
         .all()
     )
 
-    pending_orders = len([o for o in orders if o.status == "pending"])
-    confirmed_orders = len([o for o in orders if o.status == "confirmed"])
-    processed_orders = len([o for o in orders if o.status == "processed"])
-    shipped_orders = len([o for o in orders if o.status == "shipped"])
-    cancelled_orders = len([o for o in orders if o.status == "cancelled"])
+    in_process_orders = len([o for o in orders if o.status == "en_proceso"])
+    shipped_orders = len([o for o in orders if o.status == "enviado"])
+    delivered_orders = len([o for o in orders if o.status == "entregado"])
+    cancelled_orders = len([o for o in orders if o.status == "cancelado"])
 
     whatsapp = (
         db.query(WhatsAppConnection)
@@ -67,10 +66,11 @@ def build_dashboard_data(db: Session, vendor: Vendor) -> dict:
         },
         "orders": {
             "total_orders": len(orders),
-            "pending_orders": pending_orders,
-            "confirmed_orders": confirmed_orders,
-            "processed_orders": processed_orders,
+            "pending_orders": in_process_orders,
+            "confirmed_orders": 0,
+            "processed_orders": in_process_orders,
             "shipped_orders": shipped_orders,
+            "delivered_orders": delivered_orders,
             "cancelled_orders": cancelled_orders,
         },
         "whatsapp": {

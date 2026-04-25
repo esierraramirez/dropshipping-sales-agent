@@ -40,6 +40,7 @@ def register_vendor(db: Session, payload: RegisterVendorRequest) -> dict:
         country=payload.country or "México",
         postal_code=payload.postal_code,
         description=payload.description,
+        payment_methods=payload.payment_methods,
     )
 
     db.add(vendor)

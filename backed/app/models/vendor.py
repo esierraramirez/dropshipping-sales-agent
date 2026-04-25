@@ -29,6 +29,7 @@ class Vendor(Base):
     country: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, default="México")
     postal_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default=None)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
+    payment_methods: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[Optional[datetime]] = mapped_column(

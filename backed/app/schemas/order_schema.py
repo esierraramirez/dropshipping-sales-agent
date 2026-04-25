@@ -2,7 +2,7 @@ from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
 
 
-OrderStatus = Literal["pending", "confirmed", "processed", "shipped", "cancelled"]
+OrderStatus = Literal["en_proceso", "enviado", "entregado", "cancelado"]
 
 
 class OrderItemInput(BaseModel):

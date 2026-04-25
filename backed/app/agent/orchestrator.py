@@ -428,6 +428,12 @@ def generate_agent_reply(
         }
 
     context_block = build_context_block(results)
+    if vendor.payment_methods:
+        context_block = (
+            f"{context_block}\n\n"
+            "[Información de la empresa]\n"
+            f"Medios de pago disponibles: {vendor.payment_methods}"
+        )
     tone_instruction = resolve_tone_instruction(tone)
 
     system_prompt = build_sales_agent_system_prompt(

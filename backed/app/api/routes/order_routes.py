@@ -45,7 +45,7 @@ def get_my_order(
 ):
     return get_order_by_id(db=db, vendor=current_vendor, order_id=order_id)
 
-# Actualiza el estado de una orden (pending → confirmed → processed → shipped → cancelled).
+# Actualiza el estado de una orden (en_proceso, enviado, entregado, cancelado).
 @router.patch("/orders/me/{order_id}/status", response_model=OrderResponse)
 def patch_my_order_status(
     order_id: int,

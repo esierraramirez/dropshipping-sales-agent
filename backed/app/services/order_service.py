@@ -7,6 +7,9 @@ from app.models.vendor import Vendor
 from app.schemas.order_schema import OrderCreateRequest
 
 
+VALID_ORDER_STATUSES = {"en_proceso", "enviado", "entregado", "cancelado"}
+
+
 def create_order(db: Session, vendor: Vendor, payload: OrderCreateRequest) -> dict:
     total_amount = 0.0
     normalized_items = []
@@ -29,7 +32,7 @@ def create_order(db: Session, vendor: Vendor, payload: OrderCreateRequest) -> di
         customer_address=payload.customer_address,
         items_json=json.dumps(normalized_items, ensure_ascii=False),
         total_amount=total_amount,
-        status="pending",
+        status="en_proceso",
     )
 
     db.add(order)
@@ -68,6 +71,9 @@ def get_order_by_id(db: Session, vendor: Vendor, order_id: int) -> dict:
 
 
 def update_order_status(db: Session, vendor: Vendor, order_id: int, new_status: str) -> dict:
+    if new_status not in VALID_ORDER_STATUSES:
+        raise HTTPException(status_code=400, detail="Estado de orden inválido.")
+
     order = (
         db.query(Order)
         .filter(Order.id == order_id, Order.vendor_id == vendor.id)
@@ -138,7 +144,7 @@ def create_order_from_chat(
         customer_address=customer_address,
         items_json=json.dumps(normalized_items, ensure_ascii=False),
         total_amount=total_amount,
-        status="pending",
+        status="en_proceso",
         chat_summary=conversation_summary,
         conversation_notes="Orden creada desde conversación de chat del agente"
     )

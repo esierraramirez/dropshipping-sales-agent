@@ -29,6 +29,7 @@ class DashboardOrdersInfo(BaseModel):
     confirmed_orders: int
     processed_orders: int
     shipped_orders: int
+    delivered_orders: int = 0
     cancelled_orders: int
 
 

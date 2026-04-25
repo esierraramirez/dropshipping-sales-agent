@@ -23,7 +23,7 @@ class Order(Base):
     total_amount: Mapped[float] = mapped_column(Float, nullable=False)
 
     # Estado y seguimiento
-    status: Mapped[str] = mapped_column(String(50), default="pending")  # pending, confirmed, packed, shipped, delivered
+    status: Mapped[str] = mapped_column(String(50), default="en_proceso")  # en_proceso, enviado, entregado, cancelado
     
     # Contexto conversacional
     conversation_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
