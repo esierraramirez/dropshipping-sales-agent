@@ -68,6 +68,23 @@ def _detect_purchase_keywords(text: str) -> bool:
     return False
 
 
+def _strip_repeated_intro(reply: str) -> str:
+    intro_patterns = [
+        r"^\s*[¡!]?hola[!¡,. ]*\s*",
+        r"^\s*soy el asistente(?: virtual)?(?: de [^.?!\n]+)?[.?!]?\s*",
+        r"^\s*[¿?¡!]*en qu[eé] puedo ayudarte hoy[?¿!¡]*\s*[,.;:-]?\s*",
+    ]
+
+    cleaned = reply
+    previous = None
+    while previous != cleaned:
+        previous = cleaned
+        for pattern in intro_patterns:
+            cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
+
+    return cleaned.strip() or reply
+
+
 def _create_order_from_response(
     db: Session,
     vendor: Vendor,
@@ -235,6 +252,7 @@ def generate_agent_reply(
         system_prompt=system_prompt,
         user_message=user_message
     )
+    agent_reply = _strip_repeated_intro(agent_reply)
 
     # Convertir purchase_context a objeto si viene como dict
     pc_obj = None
