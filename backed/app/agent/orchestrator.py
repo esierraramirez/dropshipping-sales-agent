@@ -133,6 +133,52 @@ def _extract_identity(text: str) -> tuple[str | None, str | None]:
     return name, gender
 
 
+def _extract_gender_preference(text: str) -> str | None:
+    normalized = _normalize_text(text)
+
+    masculine_patterns = [
+        r"\btrata(?:me)?\s+en\s+masculino\b",
+        r"\bhablame\s+en\s+masculino\b",
+        r"\bsoy\s+hombre\b",
+        r"\bmasculino\b",
+        r"\bvaron\b",
+    ]
+    feminine_patterns = [
+        r"\btrata(?:me)?\s+en\s+femenino\b",
+        r"\bhablame\s+en\s+femenino\b",
+        r"\bsoy\s+mujer\b",
+        r"\bfemenino\b",
+    ]
+
+    if any(re.search(pattern, normalized) for pattern in masculine_patterns):
+        return "masculino"
+    if any(re.search(pattern, normalized) for pattern in feminine_patterns):
+        return "femenino"
+    return None
+
+
+def _infer_gender_preference(
+    user_message: str,
+    conversation_history: Optional[List[dict]] = None,
+) -> str | None:
+    current = _extract_gender_preference(user_message)
+    if current:
+        return current
+
+    if not conversation_history:
+        return None
+
+    for message in reversed(conversation_history):
+        if message.get("role") != "user":
+            continue
+        content = str(message.get("content", ""))
+        detected = _extract_gender_preference(content)
+        if detected:
+            return detected
+
+    return None
+
+
 def _build_identity_reply(vendor_name: str, name: str | None, gender: str | None) -> str:
     if name and gender:
         suffix = "listo" if gender == "masculino" else "lista"
@@ -257,6 +303,13 @@ def _create_order_from_response(
         print(f"  └─ Sin teléfono del cliente")
         return None
     
+    # Si el flujo ya viene confirmado en contexto, crea la orden de forma determinista.
+    if purchase_context.is_confirmed:
+        print("  └─ purchase_context.is_confirmed=True, se creara orden")
+        found_keyword = True
+    else:
+        found_keyword = False
+
     # Verifica que el agente haya confirmado la orden
     confirm_keywords = [
         "registré tu orden",
@@ -269,15 +322,20 @@ def _create_order_from_response(
         "hemos registrado tu orden",
         "tu orden quedó lista",
         "orden lista",
+        "pedido confirmado",
+        "pedido registrado",
+        "te confirmo",
+        "orden confirmada",
+        "compra confirmada",
     ]
     
     response_lower = agent_response.lower()
-    found_keyword = False
-    for kw in confirm_keywords:
-        if kw in response_lower:
-            found_keyword = True
-            print(f"  └─ Palabra clave de confirmación encontrada: '{kw}'")
-            break
+    if not found_keyword:
+        for kw in confirm_keywords:
+            if kw in response_lower:
+                found_keyword = True
+                print(f"  └─ Palabra clave de confirmación encontrada: '{kw}'")
+                break
     
     if not found_keyword:
         print(f"  └─ No se encontró palabra clave de confirmación en: {agent_response[:100]}")
@@ -435,11 +493,26 @@ def generate_agent_reply(
             f"Medios de pago disponibles: {vendor.payment_methods}"
         )
     tone_instruction = resolve_tone_instruction(tone)
+    gender_preference = _infer_gender_preference(user_message, conversation_history)
+    customer_profile_instruction = ""
+    if gender_preference == "masculino":
+        customer_profile_instruction = (
+            "Preferencia de cliente detectada: masculino. "
+            "Si recomiendas productos, prioriza opciones de hombre/masculino cuando esa distincion exista en la base de conocimiento. "
+            "Si no hay productos masculinos claros en el contexto, dilo de forma transparente y ofrece alternativas neutras del catalogo."
+        )
+    elif gender_preference == "femenino":
+        customer_profile_instruction = (
+            "Preferencia de cliente detectada: femenino. "
+            "Si recomiendas productos, prioriza opciones de mujer/femenino cuando esa distincion exista en la base de conocimiento. "
+            "Si no hay productos femeninos claros en el contexto, dilo de forma transparente y ofrece alternativas neutras del catalogo."
+        )
 
     system_prompt = build_sales_agent_system_prompt(
         vendor_name=vendor.name,
         tone_instruction=tone_instruction,
-        context_block=context_block
+        context_block=context_block,
+        customer_profile_instruction=customer_profile_instruction,
     )
 
     adapter = OpenAIAdapter()

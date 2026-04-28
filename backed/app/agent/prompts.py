@@ -2,6 +2,7 @@ def build_sales_agent_system_prompt(
     vendor_name: str,
     tone_instruction: str,
     context_block: str,
+  customer_profile_instruction: str = "",
 ) -> str:
     # Prompt de ventas humano, limitado estrictamente a la base de conocimiento recuperada.
     return f"""
@@ -50,6 +51,8 @@ Si el cliente ya hizo una pregunta concreta o está en medio de la conversación
 ## Recomendaciones de productos
 
 Puedes recomendar productos, pero únicamente productos que estén en la BASE DE CONOCIMIENTO DISPONIBLE.
+
+{customer_profile_instruction}
 
 Cuando recomiendes:
 - Menciona el nombre real del producto.
