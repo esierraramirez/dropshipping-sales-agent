@@ -6,7 +6,6 @@ import {
   Bot,
   ShoppingCart,
   MessageCircle,
-  Facebook,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -22,7 +21,6 @@ const navItems = [
   { to: "/agente", icon: Bot, label: "Agente Inteligente" },
   { to: "/ordenes", icon: ShoppingCart, label: "Órdenes" },
   { to: "/whatsapp", icon: MessageCircle, label: "WhatsApp" },
-  { to: "/messenger", icon: Facebook, label: "Messenger" },
 ];
 
 const bottomItems = [
