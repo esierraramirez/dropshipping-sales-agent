@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.core.config import settings
+from app.infrastructure.db.csv_audit import register_csv_audit_listeners
 
 
 # Configurar SQLAlchemy para PostgreSQL con pooling
@@ -26,6 +27,9 @@ SessionLocal = sessionmaker(
 
 class Base(DeclarativeBase):
     pass
+
+
+register_csv_audit_listeners(SessionLocal, Base)
 
 
 # Flag para lazy init de tablas

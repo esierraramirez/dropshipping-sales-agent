@@ -38,5 +38,9 @@ class Settings(BaseModel):
     WHATSAPP_PHONE_NUMBER_ID: str = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
     WHATSAPP_PHONE_NUMBER: str = os.getenv("WHATSAPP_PHONE_NUMBER", "")
 
+    # CSV audit for CRUD operations
+    CRUD_AUDIT_ENABLED: bool = os.getenv("CRUD_AUDIT_ENABLED", "true").lower() == "true"
+    CRUD_AUDIT_CSV_PATH: str = os.getenv("CRUD_AUDIT_CSV_PATH", "data/audit/crud_operations.csv")
+
 
 settings = Settings()
