@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.infrastructure.db.session import get_db
@@ -52,6 +52,34 @@ def get_my_products(
     current_vendor: Vendor = Depends(get_current_vendor),
 ):
     return list_authenticated_vendor_products(db=db, vendor=current_vendor)
+
+
+# Lista productos filtrando explicitamente por atributos de negocio.
+@router.get("/catalog/products/me/filter", response_model=ProductListResponse)
+def filter_my_products(
+    category: str | None = Query(default=None, min_length=1),
+    stock_status: str | None = Query(default=None, min_length=1),
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor),
+):
+    query = db.query(Product).filter(
+        Product.vendor_id == current_vendor.id,
+        Product.is_deleted == False,
+    )
+
+    if category:
+        query = query.filter(Product.category.ilike(f"%{category.strip()}%"))
+
+    if stock_status:
+        query = query.filter(Product.stock_status == stock_status.strip())
+
+    products = query.order_by(Product.name.asc()).all()
+
+    return {
+        "vendor_name": current_vendor.name,
+        "total_products": len(products),
+        "products": products,
+    }
 
 # Obtiene los detalles completos de un producto específico.
 @router.get("/catalog/products/{product_id}")

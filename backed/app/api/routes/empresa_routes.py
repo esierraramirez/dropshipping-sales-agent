@@ -8,6 +8,7 @@ from app.models.vendor import Vendor
 from app.models.product import Product
 from app.models.order import Order
 from app.schemas.vendor_schema import VendorResponse, VendorUpdateRequest
+from app.services.audit_service import log_action
 
 router = APIRouter()
 
@@ -78,4 +79,39 @@ def get_empresa_stats(
         "total_products": total_products,
         "total_orders": total_orders,
         "total_customers": total_customers,
+    }
+
+
+# Desactiva la empresa autenticada (eliminacion logica).
+@router.delete("/empresa/me")
+def delete_my_empresa(
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor)
+):
+    if not current_vendor.is_active:
+        return {
+            "message": "La empresa ya se encontraba inactiva.",
+            "vendor_id": current_vendor.id,
+            "is_active": current_vendor.is_active,
+        }
+
+    log_action(
+        db=db,
+        action="deleted",
+        entity_type="Vendor",
+        entity_id=current_vendor.id,
+        vendor=current_vendor,
+        old_values=current_vendor,
+        new_values=None,
+        description=f"Empresa desactivada: {current_vendor.name}",
+    )
+
+    current_vendor.is_active = False
+    db.commit()
+    db.refresh(current_vendor)
+
+    return {
+        "message": "Empresa desactivada correctamente.",
+        "vendor_id": current_vendor.id,
+        "is_active": current_vendor.is_active,
     }

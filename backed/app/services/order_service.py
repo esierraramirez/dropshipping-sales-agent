@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from app.models.order import Order
 from app.models.vendor import Vendor
 from app.schemas.order_schema import OrderCreateRequest
+from app.services.audit_service import log_delete
 
 
 VALID_ORDER_STATUSES = {"en_proceso", "enviado", "entregado", "cancelado"}
@@ -88,6 +89,36 @@ def update_order_status(db: Session, vendor: Vendor, order_id: int, new_status: 
     db.refresh(order)
 
     return serialize_order(order)
+
+
+def delete_order(db: Session, vendor: Vendor, order_id: int) -> dict:
+    order = (
+        db.query(Order)
+        .filter(Order.id == order_id, Order.vendor_id == vendor.id)
+        .first()
+    )
+
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada.")
+
+    # Registrar auditoria antes de eliminar fisicamente la orden.
+    log_delete(
+        db=db,
+        entity_type="Order",
+        entity_id=order.id,
+        entity_object=order,
+        vendor=vendor,
+        description=f"Orden eliminada: {order.id}",
+    )
+
+    deleted_order_id = order.id
+    db.delete(order)
+    db.commit()
+
+    return {
+        "message": "Orden eliminada correctamente.",
+        "order_id": deleted_order_id,
+    }
 
 
 def serialize_order(order: Order) -> dict:

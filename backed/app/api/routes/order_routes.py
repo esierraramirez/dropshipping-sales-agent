@@ -15,6 +15,7 @@ from app.services.order_service import (
     list_orders_by_vendor,
     get_order_by_id,
     update_order_status,
+    delete_order,
 )
 
 router = APIRouter()
@@ -59,3 +60,13 @@ def patch_my_order_status(
         order_id=order_id,
         new_status=payload.status
     )
+
+
+# Elimina una orden del vendor autenticado.
+@router.delete("/orders/me/{order_id}")
+def delete_my_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor)
+):
+    return delete_order(db=db, vendor=current_vendor, order_id=order_id)
