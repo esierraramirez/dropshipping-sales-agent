@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3400" height="1900" viewBox="0 0 3400 1900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fbff"/>
+      <stop offset="100%" stop-color="#eefdf7"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 56px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 26px Arial, sans-serif; fill: #475569; }
+      .section { font: 700 34px Arial, sans-serif; fill: #0f172a; }
+      .label { font: 700 28px Arial, sans-serif; fill: #0f172a; }
+      .small { font: 400 22px Arial, sans-serif; fill: #334155; }
+      .tiny { font: 400 18px Arial, sans-serif; fill: #475569; }
+      .sys { fill: #ecfeff; stroke: #0f766e; stroke-width: 5; rx: 34; ry: 34; }
+      .box { fill: #ffffff; stroke: #2563eb; stroke-width: 4; rx: 28; ry: 28; }
+      .data { fill: #fff7ed; stroke: #ea580c; stroke-width: 4; rx: 28; ry: 28; }
+      .ext { fill: #fdf2f8; stroke: #db2777; stroke-width: 4; rx: 28; ry: 28; }
+      .line { stroke: #334155; stroke-width: 5; fill: none; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 16 12; }
+    </style>
+    <marker id="arrow" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto">
+      <path d="M0,0 L16,8 L0,16 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <rect width="3400" height="1900" fill="url(#bg)"/>
+  <text x="100" y="110" class="title">C4 - Contenedores</text>
+  <text x="100" y="160" class="subtitle">Descomposicion del sistema en frontend, backend, almacenamiento y servicios externos</text>
+
+  <rect x="90" y="260" width="3220" height="1360" class="sys"/>
+  <text x="1700" y="330" text-anchor="middle" class="section">Dropshipping Sales Agent</text>
+
+  <rect x="170" y="500" width="420" height="240" class="box"/>
+  <text x="380" y="560" text-anchor="middle" class="label">Frontend React</text>
+  <text x="380" y="605" text-anchor="middle" class="small">Vite + Router + Pages</text>
+  <text x="380" y="645" text-anchor="middle" class="small">Dashboard, empresa, catalogo</text>
+  <text x="380" y="685" text-anchor="middle" class="small">ordenes, agente, configuracion</text>
+
+  <rect x="690" y="500" width="520" height="240" class="box"/>
+  <text x="950" y="560" text-anchor="middle" class="label">API FastAPI</text>
+  <text x="950" y="605" text-anchor="middle" class="small">Router principal + rutas por modulo</text>
+  <text x="950" y="645" text-anchor="middle" class="small">auth, empresa, catalogo, ordenes, chat</text>
+  <text x="950" y="685" text-anchor="middle" class="small">retrieval, settings, whatsapp, audit</text>
+
+  <rect x="1320" y="500" width="520" height="240" class="box"/>
+  <text x="1580" y="560" text-anchor="middle" class="label">Servicios de Negocio</text>
+  <text x="1580" y="605" text-anchor="middle" class="small">auth_service, catalog_service, order_service</text>
+  <text x="1580" y="645" text-anchor="middle" class="small">chat_service, retrieval_service, settings_service</text>
+  <text x="1580" y="685" text-anchor="middle" class="small">audit_service, whatsapp_service, dashboard_service</text>
+
+  <rect x="1950" y="500" width="520" height="240" class="box"/>
+  <text x="2210" y="560" text-anchor="middle" class="label">Infraestructura</text>
+  <text x="2210" y="605" text-anchor="middle" class="small">SQLAlchemy session + Base</text>
+  <text x="2210" y="645" text-anchor="middle" class="small">Excel importer / normalizer</text>
+  <text x="2210" y="685" text-anchor="middle" class="small">OpenAI adapter, RAG, CSV audit</text>
+
+  <rect x="2580" y="500" width="610" height="240" class="box"/>
+  <text x="2885" y="560" text-anchor="middle" class="label">Modelos ORM</text>
+  <text x="2885" y="605" text-anchor="middle" class="small">Vendor, Product, Order, VendorSettings</text>
+  <text x="2885" y="645" text-anchor="middle" class="small">WhatsAppConnection, AuditLog</text>
+  <text x="2885" y="685" text-anchor="middle" class="small">relaciones y reglas de integridad</text>
+
+  <rect x="170" y="860" width="520" height="240" class="data"/>
+  <text x="430" y="920" text-anchor="middle" class="label">PostgreSQL / Supabase</text>
+  <text x="430" y="965" text-anchor="middle" class="small">Persistencia transaccional</text>
+  <text x="430" y="1005" text-anchor="middle" class="small">vendors, products, orders, settings, audit</text>
+
+  <rect x="820" y="860" width="520" height="240" class="data"/>
+  <text x="1080" y="920" text-anchor="middle" class="label">Carpetas de Datos</text>
+  <text x="1080" y="965" text-anchor="middle" class="small">data/raw, data/processed, data/index</text>
+  <text x="1080" y="1005" text-anchor="middle" class="small">CSV de auditoria CRUD</text>
+
+  <rect x="1470" y="860" width="420" height="240" class="ext"/>
+  <text x="1680" y="920" text-anchor="middle" class="label">OpenAI</text>
+  <text x="1680" y="965" text-anchor="middle" class="small">LLM para respuesta y analisis</text>
+  <text x="1680" y="1005" text-anchor="middle" class="small">soporte al agente</text>
+
+  <rect x="1990" y="860" width="420" height="240" class="ext"/>
+  <text x="2200" y="920" text-anchor="middle" class="label">WhatsApp Cloud API</text>
+  <text x="2200" y="965" text-anchor="middle" class="small">Webhook, verificacion, mensajes</text>
+  <text x="2200" y="1005" text-anchor="middle" class="small">interaccion externa con clientes</text>
+
+  <line x1="590" y1="620" x2="690" y2="620" class="line"/>
+  <line x1="1210" y1="620" x2="1320" y2="620" class="line"/>
+  <line x1="1840" y1="620" x2="1950" y2="620" class="line"/>
+  <line x1="2470" y1="620" x2="2580" y2="620" class="line"/>
+  <line x1="950" y1="740" x2="430" y2="860" class="line dash"/>
+  <line x1="1580" y1="740" x2="1080" y2="860" class="line dash"/>
+  <line x1="2210" y1="740" x2="1680" y2="860" class="line dash"/>
+  <line x1="2885" y1="740" x2="2200" y2="860" class="line dash"/>
+
+  <text x="1700" y="1250" text-anchor="middle" class="tiny">El backend separa presentacion, logica de negocio, infraestructura y persistencia para mantener el sistema escalable.</text>
+</svg>

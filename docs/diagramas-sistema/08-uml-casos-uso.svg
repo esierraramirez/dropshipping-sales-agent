@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3400" height="1900" viewBox="0 0 3400 1900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbfdff"/>
+      <stop offset="100%" stop-color="#f4f7ff"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 56px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 26px Arial, sans-serif; fill: #475569; }
+      .actor { fill: #dbeafe; stroke: #2563eb; stroke-width: 4; rx: 22; ry: 22; }
+      .usecase { fill: #ffffff; stroke: #6366f1; stroke-width: 4; rx: 38; ry: 38; }
+      .label { font: 700 24px Arial, sans-serif; fill: #0f172a; }
+      .text { font: 400 20px Arial, sans-serif; fill: #334155; }
+      .line { stroke: #334155; stroke-width: 5; fill: none; marker-end: url(#arrow); }
+      .system { fill: #ecfeff; stroke: #0f766e; stroke-width: 5; rx: 36; ry: 36; }
+    </style>
+    <marker id="arrow" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto">
+      <path d="M0,0 L16,8 L0,16 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <rect width="3400" height="1900" fill="url(#bg)"/>
+  <text x="100" y="110" class="title">UML - Casos de Uso</text>
+  <text x="100" y="160" class="subtitle">Funciones principales cubiertas por el sistema</text>
+
+  <rect x="100" y="260" width="260" height="140" class="actor"/>
+  <text x="230" y="320" text-anchor="middle" class="label">Vendor</text>
+  <text x="230" y="355" text-anchor="middle" class="text">Usuario operativo</text>
+
+  <rect x="100" y="470" width="260" height="140" class="actor"/>
+  <text x="230" y="530" text-anchor="middle" class="label">Administrador</text>
+  <text x="230" y="565" text-anchor="middle" class="text">Supervision</text>
+
+  <rect x="460" y="220" width="2860" height="1450" class="system"/>
+  <text x="1890" y="290" text-anchor="middle" class="label">Sistema Dropshipping Sales Agent</text>
+
+  <ellipse cx="880" cy="420" rx="220" ry="70" class="usecase"/>
+  <text x="880" y="415" text-anchor="middle" class="label">Autenticarse</text>
+  <text x="880" y="448" text-anchor="middle" class="text">register, login, JWT</text>
+
+  <ellipse cx="1420" cy="420" rx="240" ry="70" class="usecase"/>
+  <text x="1420" y="415" text-anchor="middle" class="label">Gestionar Empresa</text>
+  <text x="1420" y="448" text-anchor="middle" class="text">perfil, estado, estadisticas</text>
+
+  <ellipse cx="1970" cy="420" rx="240" ry="70" class="usecase"/>
+  <text x="1970" y="415" text-anchor="middle" class="label">Configurar Catálogo</text>
+  <text x="1970" y="448" text-anchor="middle" class="text">upload, normalize, save</text>
+
+  <ellipse cx="2520" cy="420" rx="220" ry="70" class="usecase"/>
+  <text x="2520" y="415" text-anchor="middle" class="label">Buscar Productos</text>
+  <text x="2520" y="448" text-anchor="middle" class="text">retrieval / RAG</text>
+
+  <ellipse cx="880" cy="700" rx="240" ry="70" class="usecase"/>
+  <text x="880" y="695" text-anchor="middle" class="label">Administrar Órdenes</text>
+  <text x="880" y="728" text-anchor="middle" class="text">crear, listar, ver, actualizar, borrar</text>
+
+  <ellipse cx="1420" cy="700" rx="240" ry="70" class="usecase"/>
+  <text x="1420" y="695" text-anchor="middle" class="label">Atender WhatsApp</text>
+  <text x="1420" y="728" text-anchor="middle" class="text">webhook, mensajes, configuracion</text>
+
+  <ellipse cx="1970" cy="700" rx="240" ry="70" class="usecase"/>
+  <text x="1970" y="695" text-anchor="middle" class="label">Generar Respuestas IA</text>
+  <text x="1970" y="728" text-anchor="middle" class="text">LLM, contexto, agente</text>
+
+  <ellipse cx="2520" cy="700" rx="240" ry="70" class="usecase"/>
+  <text x="2520" y="695" text-anchor="middle" class="label">Auditar Operaciones</text>
+  <text x="2520" y="728" text-anchor="middle" class="text">AuditLog + CSV CRUD</text>
+
+  <ellipse cx="1420" cy="980" rx="240" ry="70" class="usecase"/>
+  <text x="1420" y="975" text-anchor="middle" class="label">Ver Dashboard</text>
+  <text x="1420" y="1008" text-anchor="middle" class="text">metricas, estado y resumen</text>
+
+  <ellipse cx="1970" cy="980" rx="240" ry="70" class="usecase"/>
+  <text x="1970" y="975" text-anchor="middle" class="label">Configurar Sistema</text>
+  <text x="1970" y="1008" text-anchor="middle" class="text">settings y parametros de negocio</text>
+
+  <ellipse cx="880" cy="1260" rx="240" ry="70" class="usecase"/>
+  <text x="880" y="1255" text-anchor="middle" class="label">Restaurar Producto</text>
+  <text x="880" y="1288" text-anchor="middle" class="text">soft delete / historial</text>
+
+  <line x1="360" y1="330" x2="660" y2="420" class="line"/>
+  <line x1="360" y1="330" x2="1180" y2="700" class="line"/>
+  <line x1="360" y1="540" x2="2320" y2="700" class="line"/>
+  <line x1="360" y1="540" x2="1180" y2="980" class="line"/>
+  <line x1="1100" y1="420" x2="1180" y2="420" class="line"/>
+  <line x1="1640" y1="420" x2="1730" y2="420" class="line"/>
+  <line x1="2190" y1="420" x2="2280" y2="420" class="line"/>
+  <line x1="1100" y1="700" x2="1180" y2="700" class="line"/>
+  <line x1="1640" y1="700" x2="1730" y2="700" class="line"/>
+  <line x1="2190" y1="700" x2="2280" y2="700" class="line"/>
+  <line x1="2320" y1="700" x2="2320" y2="700" class="line"/>
+
+  <text x="100" y="1680" class="text">El diagrama resume el uso funcional del sistema para presentacion y evaluacion.</text>
+</svg>

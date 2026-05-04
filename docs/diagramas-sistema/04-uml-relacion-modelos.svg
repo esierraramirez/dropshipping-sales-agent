@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3400" height="1900" viewBox="0 0 3400 1900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffdf8"/>
+      <stop offset="100%" stop-color="#eef6ff"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 56px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 26px Arial, sans-serif; fill: #475569; }
+      .header { font: 700 28px Arial, sans-serif; fill: #0f172a; }
+      .text { font: 400 20px Arial, sans-serif; fill: #334155; }
+      .box { fill: #ffffff; stroke: #2563eb; stroke-width: 4; rx: 26; ry: 26; }
+      .dash { stroke: #334155; stroke-width: 4; stroke-dasharray: 16 12; fill: none; marker-end: url(#arrow); }
+      .solid { stroke: #334155; stroke-width: 5; fill: none; marker-end: url(#arrow); }
+      .note { fill: #eff6ff; stroke: #93c5fd; stroke-width: 4; rx: 26; ry: 26; }
+    </style>
+    <marker id="arrow" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto">
+      <path d="M0,0 L16,8 L0,16 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <rect width="3400" height="1900" fill="url(#bg)"/>
+  <text x="100" y="110" class="title">UML - Relacion entre Modelos</text>
+  <text x="100" y="160" class="subtitle">Vista de asociaciones ORM entre todas las entidades implementadas</text>
+
+  <rect x="120" y="280" width="560" height="290" class="box"/>
+  <text x="400" y="340" text-anchor="middle" class="header">Vendor</text>
+  <text x="150" y="390" class="text">1 Vendor</text>
+  <text x="150" y="425" class="text">N Product</text>
+  <text x="150" y="460" class="text">N Order</text>
+  <text x="150" y="495" class="text">1 VendorSettings</text>
+  <text x="150" y="530" class="text">1 WhatsAppConnection</text>
+
+  <rect x="940" y="180" width="560" height="290" class="box"/>
+  <text x="1220" y="240" text-anchor="middle" class="header">Product</text>
+  <text x="970" y="290" class="text">vendor_id -> Vendor.id</text>
+  <text x="970" y="325" class="text">product_id, name, category</text>
+  <text x="970" y="360" class="text">price, currency, stock_status</text>
+  <text x="970" y="395" class="text">is_deleted, deleted_at</text>
+
+  <rect x="940" y="560" width="560" height="290" class="box"/>
+  <text x="1220" y="620" text-anchor="middle" class="header">Order</text>
+  <text x="970" y="670" class="text">vendor_id -> Vendor.id</text>
+  <text x="970" y="705" class="text">customer_name, phone, address</text>
+  <text x="970" y="740" class="text">items_json, total_amount, status</text>
+  <text x="970" y="775" class="text">chat_summary, conversation_notes</text>
+
+  <rect x="1540" y="180" width="620" height="290" class="box"/>
+  <text x="1850" y="240" text-anchor="middle" class="header">VendorSettings</text>
+  <text x="1570" y="290" class="text">vendor_id -> Vendor.id (1:1)</text>
+  <text x="1570" y="325" class="text">business_start_hour / end_hour</text>
+  <text x="1570" y="360" class="text">off_hours_message, agent_enabled</text>
+  <text x="1570" y="395" class="text">tone</text>
+
+  <rect x="1540" y="560" width="620" height="290" class="box"/>
+  <text x="1850" y="620" text-anchor="middle" class="header">WhatsAppConnection</text>
+  <text x="1570" y="670" class="text">vendor_id -> Vendor.id (1:1)</text>
+  <text x="1570" y="705" class="text">phone_number, phone_number_id</text>
+  <text x="1570" y="740" class="text">access_token, verify_token</text>
+  <text x="1570" y="775" class="text">is_connected, connected_at</text>
+
+  <rect x="2480" y="300" width="700" height="340" class="box"/>
+  <text x="2830" y="360" text-anchor="middle" class="header">AuditLog</text>
+  <text x="2510" y="420" class="text">vendor_id -> Vendor.id</text>
+  <text x="2510" y="460" class="text">action, entity_type, entity_id</text>
+  <text x="2510" y="500" class="text">old_values, new_values, description</text>
+  <text x="2510" y="540" class="text">ip_address, created_at</text>
+  <text x="2510" y="580" class="text">Registra cambios de Product, Order y Vendor</text>
+
+  <line x1="680" y1="425" x2="940" y2="320" class="solid"/>
+  <line x1="680" y1="425" x2="940" y2="700" class="solid"/>
+  <line x1="680" y1="425" x2="1540" y2="325" class="solid"/>
+  <line x1="680" y1="425" x2="1540" y2="700" class="solid"/>
+  <line x1="1300" y1="325" x2="1540" y2="325" class="dash"/>
+  <line x1="1300" y1="700" x2="2480" y2="470" class="dash"/>
+  <line x1="1850" y1="470" x2="2480" y2="470" class="dash"/>
+
+  <rect x="120" y="980" width="3060" height="250" class="note"/>
+  <text x="270" y="1040" class="header">Resumen de relaciones</text>
+  <text x="170" y="1090" class="text">Vendor es la entidad central del sistema y conecta catalogo, ordenes, configuracion, WhatsApp y auditoria.</text>
+  <text x="170" y="1130" class="text">Product usa soft delete y se asocia a Vendor en relacion uno a muchos.</text>
+  <text x="170" y="1170" class="text">Order guarda el contexto de compra y puede crearse desde el chat del agente.</text>
+  <text x="170" y="1210" class="text">AuditLog guarda la historia de eventos y complementa el CSV CRUD para trazabilidad.</text>
+</svg>

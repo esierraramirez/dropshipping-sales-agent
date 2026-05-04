@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3400" height="2000" viewBox="0 0 3400 2000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffdf8"/>
+      <stop offset="100%" stop-color="#f2f9ff"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 56px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 26px Arial, sans-serif; fill: #475569; }
+      .header { font: 700 26px Arial, sans-serif; fill: #0f172a; }
+      .text { font: 400 19px Arial, sans-serif; fill: #334155; }
+      .box { fill: #ffffff; stroke: #2563eb; stroke-width: 4; rx: 24; ry: 24; }
+      .soft { fill: #f8fafc; stroke: #60a5fa; stroke-width: 4; rx: 24; ry: 24; }
+      .solid { stroke: #334155; stroke-width: 5; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #334155; stroke-width: 5; stroke-dasharray: 16 12; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto">
+      <path d="M0,0 L16,8 L0,16 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <rect width="3400" height="2000" fill="url(#bg)"/>
+  <text x="100" y="110" class="title">UML - Clases del Dominio</text>
+  <text x="100" y="160" class="subtitle">Entidades principales, atributos relevantes y comportamiento del dominio</text>
+
+  <rect x="120" y="260" width="620" height="320" class="box"/>
+  <text x="430" y="325" text-anchor="middle" class="header">Vendor</text>
+  <text x="150" y="380" class="text">id, name, slug, email, password_hash</text>
+  <text x="150" y="415" class="text">is_active, rfc, sector, phone, website</text>
+  <text x="150" y="450" class="text">address, city, state, country, postal_code</text>
+  <text x="150" y="485" class="text">description, payment_methods</text>
+  <text x="150" y="520" class="text">created_at, updated_at</text>
+
+  <rect x="860" y="260" width="700" height="320" class="box"/>
+  <text x="1210" y="325" text-anchor="middle" class="header">Product</text>
+  <text x="890" y="380" class="text">id, vendor_id, product_id, name, category</text>
+  <text x="890" y="415" class="text">price, currency, stock_status</text>
+  <text x="890" y="450" class="text">min_shipping_days, max_shipping_days</text>
+  <text x="890" y="485" class="text">short_description, full_description, brand</text>
+  <text x="890" y="520" class="text">shipping_cost, shipping_regions, policies</text>
+  <text x="890" y="555" class="text">is_deleted, deleted_at, created_at, updated_at</text>
+
+  <rect x="1700" y="260" width="700" height="320" class="box"/>
+  <text x="2050" y="325" text-anchor="middle" class="header">Order</text>
+  <text x="1730" y="380" class="text">id, vendor_id, customer_name, customer_phone</text>
+  <text x="1730" y="415" class="text">customer_address, items_json, total_amount</text>
+  <text x="1730" y="450" class="text">status, conversation_notes, chat_summary</text>
+  <text x="1730" y="485" class="text">created_at, confirmed_at, updated_at</text>
+
+  <rect x="120" y="700" width="620" height="280" class="box"/>
+  <text x="430" y="765" text-anchor="middle" class="header">VendorSettings</text>
+  <text x="150" y="820" class="text">id, vendor_id, business_start_hour, business_end_hour</text>
+  <text x="150" y="855" class="text">off_hours_message, agent_enabled, tone</text>
+  <text x="150" y="890" class="text">created_at, updated_at</text>
+
+  <rect x="860" y="700" width="700" height="280" class="box"/>
+  <text x="1210" y="765" text-anchor="middle" class="header">WhatsAppConnection</text>
+  <text x="890" y="820" class="text">id, vendor_id, phone_number, phone_number_id</text>
+  <text x="890" y="855" class="text">business_account_id, access_token, verify_token</text>
+  <text x="890" y="890" class="text">is_connected, connected_at</text>
+
+  <rect x="1700" y="700" width="700" height="280" class="box"/>
+  <text x="2050" y="765" text-anchor="middle" class="header">AuditLog</text>
+  <text x="1730" y="820" class="text">id, action, entity_type, entity_id</text>
+  <text x="1730" y="855" class="text">vendor_id, old_values, new_values</text>
+  <text x="1730" y="890" class="text">description, ip_address, created_at</text>
+
+  <rect x="2480" y="350" width="800" height="360" class="soft"/>
+  <text x="2880" y="420" text-anchor="middle" class="header">Relaciones principales</text>
+  <text x="2520" y="480" class="text">Vendor 1..N Product</text>
+  <text x="2520" y="520" class="text">Vendor 1..N Order</text>
+  <text x="2520" y="560" class="text">Vendor 1..1 VendorSettings</text>
+  <text x="2520" y="600" class="text">Vendor 1..1 WhatsAppConnection</text>
+  <text x="2520" y="640" class="text">Vendor 1..N AuditLog</text>
+
+  <line x1="740" y1="420" x2="860" y2="420" class="solid"/>
+  <line x1="1560" y1="420" x2="1700" y2="420" class="solid"/>
+  <line x1="430" y1="580" x2="430" y2="700" class="dash"/>
+  <line x1="1210" y1="580" x2="1210" y2="700" class="dash"/>
+  <line x1="2050" y1="580" x2="2050" y2="700" class="dash"/>
+  <line x1="430" y1="580" x2="2880" y2="480" class="dash"/>
+  <line x1="1210" y1="580" x2="2880" y2="520" class="dash"/>
+  <line x1="2050" y1="580" x2="2880" y2="640" class="dash"/>
+
+  <rect x="120" y="1120" width="3160" height="220" class="soft"/>
+  <text x="280" y="1185" class="header">Lectura para presentacion</text>
+  <text x="150" y="1235" class="text">Vendor es el nodo central. Product y Order representan el flujo comercial; VendorSettings y WhatsAppConnection son configuraciones 1:1; AuditLog almacena trazabilidad historica.</text>
+</svg>

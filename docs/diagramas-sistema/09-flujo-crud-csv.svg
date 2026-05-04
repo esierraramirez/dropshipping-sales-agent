@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3600" height="2000" viewBox="0 0 3600 2000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fbff"/>
+      <stop offset="100%" stop-color="#fffdf8"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 56px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 26px Arial, sans-serif; fill: #475569; }
+      .label { font: 700 26px Arial, sans-serif; fill: #0f172a; }
+      .text { font: 400 20px Arial, sans-serif; fill: #334155; }
+      .box { fill: #ffffff; stroke: #2563eb; stroke-width: 4; rx: 28; ry: 28; }
+      .csv { fill: #fff7ed; stroke: #ea580c; stroke-width: 4; rx: 28; ry: 28; }
+      .db { fill: #ecfeff; stroke: #0f766e; stroke-width: 4; rx: 28; ry: 28; }
+      .audit { fill: #eff6ff; stroke: #6366f1; stroke-width: 4; rx: 28; ry: 28; }
+      .line { stroke: #334155; stroke-width: 5; fill: none; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 16 12; }
+    </style>
+    <marker id="arrow" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto">
+      <path d="M0,0 L16,8 L0,16 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <rect width="3600" height="2000" fill="url(#bg)"/>
+  <text x="100" y="110" class="title">Flujo CRUD - CSV de Auditoria</text>
+  <text x="100" y="160" class="subtitle">Interaccion entre endpoints CRUD, SQLAlchemy, auditoria en BD y archivo CSV</text>
+
+  <rect x="120" y="320" width="380" height="220" class="box"/>
+  <text x="310" y="385" text-anchor="middle" class="label">Endpoint CRUD</text>
+  <text x="310" y="430" text-anchor="middle" class="text">create, read, update, delete</text>
+  <text x="310" y="468" text-anchor="middle" class="text">catalogo, ordenes, empresa</text>
+
+  <rect x="620" y="320" width="420" height="220" class="box"/>
+  <text x="830" y="385" text-anchor="middle" class="label">Servicio de Negocio</text>
+  <text x="830" y="430" text-anchor="middle" class="text">Valida reglas</text>
+  <text x="830" y="468" text-anchor="middle" class="text">Prepara datos y contexto</text>
+
+  <rect x="1180" y="320" width="420" height="220" class="box"/>
+  <text x="1390" y="385" text-anchor="middle" class="label">SQLAlchemy / ORM</text>
+  <text x="1390" y="430" text-anchor="middle" class="text">Session, Base, mapper events</text>
+  <text x="1390" y="468" text-anchor="middle" class="text">after_insert/update/delete</text>
+
+  <rect x="1740" y="320" width="420" height="220" class="db"/>
+  <text x="1950" y="385" text-anchor="middle" class="label">Base de Datos</text>
+  <text x="1950" y="430" text-anchor="middle" class="text">PostgreSQL / Supabase</text>
+  <text x="1950" y="468" text-anchor="middle" class="text">persistencia principal</text>
+
+  <rect x="2300" y="320" width="420" height="220" class="audit"/>
+  <text x="2510" y="385" text-anchor="middle" class="label">AuditLog</text>
+  <text x="2510" y="430" text-anchor="middle" class="text">action, entity_type, entity_id</text>
+  <text x="2510" y="468" text-anchor="middle" class="text">old_values y new_values</text>
+
+  <rect x="2860" y="320" width="620" height="220" class="csv"/>
+  <text x="3170" y="385" text-anchor="middle" class="label">CSV CRUD</text>
+  <text x="3170" y="430" text-anchor="middle" class="text">timestamp, operation, model, entity_id</text>
+  <text x="3170" y="468" text-anchor="middle" class="text">table_name, source, payload_json</text>
+
+  <line x1="500" y1="430" x2="620" y2="430" class="line"/>
+  <line x1="1040" y1="430" x2="1180" y2="430" class="line"/>
+  <line x1="1600" y1="430" x2="1740" y2="430" class="line"/>
+  <line x1="2160" y1="430" x2="2300" y2="430" class="line"/>
+  <line x1="2720" y1="430" x2="2860" y2="430" class="line"/>
+
+  <rect x="620" y="700" width="420" height="180" class="audit"/>
+  <text x="830" y="760" text-anchor="middle" class="label">Operacion CREATE</text>
+  <text x="830" y="805" text-anchor="middle" class="text">after_insert -> registrar nuevo valor</text>
+
+  <rect x="1180" y="700" width="420" height="180" class="audit"/>
+  <text x="1390" y="760" text-anchor="middle" class="label">Operacion UPDATE</text>
+  <text x="1390" y="805" text-anchor="middle" class="text">after_update -> cambios de campos</text>
+
+  <rect x="1740" y="700" width="420" height="180" class="audit"/>
+  <text x="1950" y="760" text-anchor="middle" class="label">Operacion DELETE</text>
+  <text x="1950" y="805" text-anchor="middle" class="text">after_delete -> estado previo</text>
+
+  <rect x="2300" y="700" width="420" height="180" class="audit"/>
+  <text x="2510" y="760" text-anchor="middle" class="label">Operacion READ</text>
+  <text x="2510" y="805" text-anchor="middle" class="text">do_orm_execute -> SELECT ORM</text>
+
+  <line x1="830" y1="700" x2="830" y2="550" class="line dash"/>
+  <line x1="1390" y1="700" x2="1390" y2="550" class="line dash"/>
+  <line x1="1950" y1="700" x2="1950" y2="550" class="line dash"/>
+  <line x1="2510" y1="700" x2="2510" y2="550" class="line dash"/>
+  <line x1="830" y1="880" x2="3170" y2="880" class="line"/>
+  <text x="100" y="1120" class="text">Este flujo demuestra que el CRUD deja rastro en PostgreSQL, AuditLog y CSV, lo que cubre trazabilidad completa para presentacion y evaluacion.</text>
+</svg>

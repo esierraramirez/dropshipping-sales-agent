@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3400" height="1900" viewBox="0 0 3400 1900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fbff"/>
+      <stop offset="100%" stop-color="#fffaf2"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 56px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 26px Arial, sans-serif; fill: #475569; }
+      .actor { fill: #dbeafe; stroke: #2563eb; stroke-width: 4; rx: 22; ry: 22; }
+      .box { fill: #ffffff; stroke: #334155; stroke-width: 4; rx: 22; ry: 22; }
+      .call { stroke: #334155; stroke-width: 5; fill: none; marker-end: url(#arrow); }
+      .return { stroke: #64748b; stroke-width: 4; stroke-dasharray: 14 10; fill: none; marker-end: url(#arrow2); }
+      .label { font: 700 24px Arial, sans-serif; fill: #0f172a; }
+      .text { font: 400 20px Arial, sans-serif; fill: #334155; }
+      .lane { stroke: #cbd5e1; stroke-width: 3; stroke-dasharray: 12 10; }
+      .note { fill: #eff6ff; stroke: #93c5fd; stroke-width: 4; rx: 24; ry: 24; }
+    </style>
+    <marker id="arrow" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto">
+      <path d="M0,0 L16,8 L0,16 z" fill="#334155"/>
+    </marker>
+    <marker id="arrow2" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto">
+      <path d="M0,0 L16,8 L0,16 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect width="3400" height="1900" fill="url(#bg)"/>
+  <text x="100" y="110" class="title">UML - Secuencia: Catalogo</text>
+  <text x="100" y="160" class="subtitle">Carga, normalizacion, guardado, indexado y consulta del catalogo</text>
+
+  <rect x="100" y="260" width="250" height="70" class="actor"/>
+  <text x="225" y="305" text-anchor="middle" class="label">Vendor</text>
+  <line x1="225" y1="330" x2="225" y2="1700" class="lane"/>
+
+  <rect x="560" y="260" width="260" height="70" class="box"/>
+  <text x="690" y="305" text-anchor="middle" class="label">Catalog Routes</text>
+  <line x1="690" y1="330" x2="690" y2="1700" class="lane"/>
+
+  <rect x="1020" y="260" width="260" height="70" class="box"/>
+  <text x="1150" y="305" text-anchor="middle" class="label">Catalog Service</text>
+  <line x1="1150" y1="330" x2="1150" y2="1700" class="lane"/>
+
+  <rect x="1480" y="260" width="280" height="70" class="box"/>
+  <text x="1620" y="305" text-anchor="middle" class="label">Excel / Data Layer</text>
+  <line x1="1620" y1="330" x2="1620" y2="1700" class="lane"/>
+
+  <rect x="1960" y="260" width="240" height="70" class="box"/>
+  <text x="2080" y="305" text-anchor="middle" class="label">DB / Index</text>
+  <line x1="2080" y1="330" x2="2080" y2="1700" class="lane"/>
+
+  <rect x="560" y="420" width="320" height="92" class="note"/>
+  <text x="720" y="460" text-anchor="middle" class="text">1. Subir Excel / consultar</text>
+  <text x="720" y="490" text-anchor="middle" class="text">/catalog/upload/me</text>
+  <line x1="350" y1="455" x2="560" y2="455" class="call"/>
+
+  <rect x="1020" y="570" width="360" height="92" class="note"/>
+  <text x="1200" y="610" text-anchor="middle" class="text">2. Leer archivo y validar</text>
+  <text x="1200" y="640" text-anchor="middle" class="text">columnas, tipos y requeridas</text>
+  <line x1="690" y1="605" x2="1020" y2="605" class="call"/>
+
+  <rect x="1480" y="720" width="360" height="92" class="note"/>
+  <text x="1660" y="760" text-anchor="middle" class="text">3. Normalizar datos</text>
+  <text x="1660" y="790" text-anchor="middle" class="text">y preparar salida procesada</text>
+  <line x1="1150" y1="755" x2="1480" y2="755" class="call"/>
+
+  <rect x="1960" y="870" width="360" height="92" class="note"/>
+  <text x="2140" y="910" text-anchor="middle" class="text">4. Guardar archivos e indices</text>
+  <text x="2140" y="940" text-anchor="middle" class="text">data/processed y data/index</text>
+  <line x1="1620" y1="905" x2="1960" y2="905" class="call"/>
+
+  <rect x="1020" y="1030" width="360" height="92" class="note"/>
+  <text x="1200" y="1070" text-anchor="middle" class="text">5. Guardar productos en SQL</text>
+  <text x="1200" y="1100" text-anchor="middle" class="text">/catalog/save/me</text>
+  <line x1="350" y1="1085" x2="560" y2="1085" class="call"/>
+  <line x1="690" y1="1085" x2="1020" y2="1085" class="call"/>
+  <line x1="1150" y1="1085" x2="1480" y2="1085" class="call"/>
+  <line x1="1620" y1="1085" x2="1960" y2="1085" class="call"/>
+
+  <rect x="1480" y="1190" width="360" height="92" class="note"/>
+  <text x="1660" y="1230" text-anchor="middle" class="text">6. Construir KB y RAG</text>
+  <text x="1660" y="1260" text-anchor="middle" class="text">/catalog/build-knowledge-base/me</text>
+  <line x1="1150" y1="1235" x2="1480" y2="1235" class="call"/>
+  <line x1="1620" y1="1235" x2="1960" y2="1235" class="call"/>
+
+  <rect x="560" y="1370" width="360" height="92" class="note"/>
+  <text x="740" y="1410" text-anchor="middle" class="text">7. Buscar por query</text>
+  <text x="740" y="1440" text-anchor="middle" class="text">/retrieval/search</text>
+  <line x1="350" y1="1415" x2="560" y2="1415" class="call"/>
+  <line x1="690" y1="1415" x2="1020" y2="1415" class="call"/>
+
+  <text x="100" y="1640" class="text">Resultado: catalogo limpio, persistido, indexado y listo para respuestas IA.</text>
+</svg>

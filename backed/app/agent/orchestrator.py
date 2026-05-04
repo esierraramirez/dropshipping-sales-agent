@@ -13,12 +13,62 @@ from app.services.order_service import create_order_from_chat
 from app.agent.policies import is_within_business_hours, resolve_tone_instruction
 from app.agent.prompts import build_sales_agent_system_prompt
 from app.schemas.chat_schema import PurchaseContext, CartItem
+from app.utils.gender_detection import detect_gender_by_name, infer_gender_from_conversation
+from app.utils.data_extraction import (
+    extract_customer_name, extract_phone_number, extract_address,
+    extract_confirmation_intent, extract_rejection_intent,
+    update_purchase_context_from_message, get_client_data_summary
+)
+from app.utils.product_handler import (
+    extract_product_from_catalog_context, extract_product_variants,
+    is_customer_confirming_product, is_customer_selecting_variant,
+    build_product_summary, extract_all_required_data, should_create_order
+)
 
 
 NO_KNOWLEDGE_REPLY = (
     "Por ahora no tengo esa informacion disponible en el catalogo. "
     "Si quieres, puedo ayudarte con los productos y datos que tengo registrados."
 )
+
+
+def _build_out_of_catalog_reply(user_message: str, vendor_name: str) -> str:
+    """
+    Mejora la respuesta cuando el usuario pregunta por algo no en el catálogo.
+    Extrae lo que buscaba y sugiere alternativas.
+    """
+    # Extraer lo que el usuario buscaba
+    normalized = _normalize_text(user_message)
+    
+    # Palabras clave para identificar qué busca
+    if "ling" in normalized or "linga" in normalized or "lenceria" in normalized:
+        searched_item = "lenceria"
+        alternatives = "productos basicos, prendas de uso diario o accesorios"
+    elif "zapat" in normalized or "zapato" in normalized:
+        searched_item = "zapatos"
+        alternatives = "prendas de vestir, accesorios o productos complementarios"
+    elif "bolsa" in normalized or "bolso" in normalized:
+        searched_item = "bolsas"
+        alternatives = "accesorios, billeteras o productos de complemento"
+    elif "sombrero" in normalized or "gorro" in normalized or "sombrilla" in normalized:
+        searched_item = "sombreros o gorros"
+        alternatives = "accesorios complementarios o prendas de vestir"
+    elif "reloj" in normalized:
+        searched_item = "relojes"
+        alternatives = "accesorios, joyeria o prendas complementarias"
+    else:
+        # Respuesta genérica si no identificamos bien qué busca
+        return (
+            f"Entiendo que buscas algo específico, pero en este momento {vendor_name} "
+            "no tiene disponible. Sin embargo, te puedo mostrar opciones similares o complementarias. "
+            "¿Prefieres ver categorias disponibles o productos recomendados?"
+        )
+    
+    return (
+        f"No encontramos {searched_item} en el catálogo de {vendor_name} en este momento. "
+        f"Sin embargo, contamos con excelentes opciones en otras categorias como {alternatives}. "
+        "¿Te gustaría explorar alguna de estas opciones?"
+    )
 
 
 def _is_simple_greeting(text: str) -> bool:
@@ -50,6 +100,8 @@ def _normalize_text(text: str) -> str:
 
 def _is_catalog_or_sales_query(text: str) -> bool:
     normalized_words = set(_normalize_text(text).split())
+    
+    # Términos generales de catálogo
     catalog_terms = {
         "catalogo",
         "menu",
@@ -93,6 +145,42 @@ def _is_catalog_or_sales_query(text: str) -> bool:
         "cambio",
         "pagar",
         "pago",
+        "interesado",
+        "interesada",
+        "interes",
+        "me",
+        # Palabras específicas de productos
+        "camisa",
+        "camisas",
+        "jean",
+        "jeans",
+        "pantalon",
+        "pantalones",
+        "vestido",
+        "vestidos",
+        "falda",
+        "faldas",
+        "blusa",
+        "blusas",
+        "playera",
+        "playeras",
+        "sueter",
+        "abrigo",
+        "abrigos",
+        "chaqueta",
+        "chaquetas",
+        "zapato",
+        "zapatos",
+        "tenis",
+        "ropa",
+        "prenda",
+        "prendas",
+        "outfit",
+        "traje",
+        "trajes",
+        "sweater",
+        "hoodie",
+        "corbata",
     }
     return bool(normalized_words & catalog_terms)
 
@@ -100,15 +188,15 @@ def _is_catalog_or_sales_query(text: str) -> bool:
 def _build_general_reply(vendor_name: str, user_message: str) -> str:
     normalized = _normalize_text(user_message)
     if normalized in {"gracias", "muchas gracias", "ok gracias", "listo gracias"}:
-        return "¡Con mucho gusto! 😊 Estoy aquí para ayudarte cuando lo necesites."
+        return "¡Con mucho gusto! Estoy aquí para ayudarte cuando lo necesites."
 
     if normalized in {"como estas", "que tal", "como vas"}:
-        return f"¡Muy bien, gracias por preguntar! 😊 Aquí estoy para ayudarte con {vendor_name}."
+        return f"¡Muy bien, gracias por preguntar! Aquí estoy para ayudarte con {vendor_name}."
 
     if normalized in {"ok", "listo", "perfecto", "vale", "bueno"}:
-        return "Perfecto 😊 Quedo atento a lo que necesites."
+        return "Perfecto. Quedo atento a lo que necesites."
 
-    return "Claro 😊 Estoy aquí para ayudarte. Cuéntame qué estás buscando o qué necesitas saber."
+    return "Claro. Estoy aquí para ayudarte. Cuéntame qué estás buscando o qué necesitas saber."
 
 
 def _extract_identity(text: str) -> tuple[str | None, str | None]:
@@ -165,16 +253,34 @@ def _infer_gender_preference(
     if current:
         return current
 
-    if not conversation_history:
-        return None
+    # Intentar detectar el género del nombre del cliente
+    name = extract_customer_name(user_message)
+    if name:
+        gender_by_name = detect_gender_by_name(name)
+        if gender_by_name:
+            return gender_by_name
 
-    for message in reversed(conversation_history):
-        if message.get("role") != "user":
-            continue
-        content = str(message.get("content", ""))
-        detected = _extract_gender_preference(content)
-        if detected:
-            return detected
+    # Buscar en el historial
+    if conversation_history:
+        for message in reversed(conversation_history):
+            if message.get("role") != "user":
+                continue
+            content = str(message.get("content", ""))
+            
+            # Buscar preferencia explícita
+            detected = _extract_gender_preference(content)
+            if detected:
+                return detected
+            
+            # Buscar nombre en el historial
+            name_in_history = extract_customer_name(content)
+            if name_in_history:
+                gender_by_name = detect_gender_by_name(name_in_history)
+                if gender_by_name:
+                    return gender_by_name
+        
+        # Usar función de inferencia del módulo de detección
+        return infer_gender_from_conversation(conversation_history)
 
     return None
 
@@ -182,13 +288,13 @@ def _infer_gender_preference(
 def _build_identity_reply(vendor_name: str, name: str | None, gender: str | None) -> str:
     if name and gender:
         suffix = "listo" if gender == "masculino" else "lista"
-        return f"¡Mucho gusto, {name}! 😊 Perfecto, te trataré en {gender}. Ya estoy {suffix} para ayudarte con {vendor_name}."
+        return f"¡Mucho gusto, {name}! Perfecto, te trataré en {gender}. Ya estoy {suffix} para ayudarte con {vendor_name}."
     if name:
-        return f"¡Mucho gusto, {name}! 😊 ¿Prefieres que te trate en masculino o femenino?"
+        return f"¡Mucho gusto, {name}! ¿Prefieres que te trate en masculino o femenino?"
     if gender:
         suffix = "claro" if gender == "masculino" else "clara"
-        return f"Perfecto, lo tengo presente 😊 Para atenderte mejor, ¿me regalas tu nombre?"
-    return "Perfecto 😊 ¿Me regalas tu nombre y me dices si prefieres que te trate en masculino o femenino?"
+        return f"Perfecto, lo tengo presente. Para atenderte mejor, ¿me regalas tu nombre?"
+    return "Perfecto. ¿Me regalas tu nombre y me dices si prefieres que te trate en masculino o femenino?"
 
 
 def _is_general_social_message(text: str) -> bool:
@@ -212,8 +318,8 @@ def _is_general_social_message(text: str) -> bool:
 
 def _build_welcome_reply(vendor_name: str) -> str:
     return (
-        f"¡Hola! 👋 Soy el asistente de {vendor_name}. "
-        "Qué gusto atenderte 😊 ¿Me regalas tu nombre y me dices si prefieres que te trate en masculino o femenino? "
+        f"¡Hola! Soy el asistente de {vendor_name}. "
+        "Qué gusto atenderte. ¿Me regalas tu nombre y me dices si prefieres que te trate en masculino o femenino? "
         "Así puedo ayudarte de forma más cercana."
     )
 
@@ -289,87 +395,90 @@ def _create_order_from_response(
     agent_response: str,
     purchase_context: Optional[PurchaseContext]
 ) -> Optional[dict]:
-    # Crea una orden automáticamente cuando el agente confirma la venta y tiene datos del cliente.
+    """
+    Crea una orden cuando el agente confirma la venta.
+    Requisitos mínimos: nombre + teléfono + producto (dirección opcional)
+    """
     if not purchase_context:
         print("  └─ No hay purchase_context")
         return None
     
-    # Verifica que tenga datos del cliente
+    # Verifica que tenga datos mínimos del cliente
     if not purchase_context.customer_name:
         print(f"  └─ Sin nombre del cliente")
         return None
     
     if not purchase_context.customer_phone:
-        print(f"  └─ Sin teléfono del cliente")
+        print(f"  └─ Sin telefono del cliente")
         return None
     
-    # Si el flujo ya viene confirmado en contexto, crea la orden de forma determinista.
+    # Verifica que tenga al menos un producto
+    if not purchase_context.items or len(purchase_context.items) == 0:
+        print(f"  └─ Sin productos en la orden")
+        return None
+    
+    # Si el flujo ya viene confirmado en contexto, crea la orden de forma determinista
     if purchase_context.is_confirmed:
-        print("  └─ purchase_context.is_confirmed=True, se creara orden")
-        found_keyword = True
+        print("  └─ purchase_context.is_confirmed=True, creando orden")
+        found_confirmation = True
     else:
-        found_keyword = False
-
-    # Verifica que el agente haya confirmado la orden
-    confirm_keywords = [
-        "registré tu orden",
-        "registrar tu orden",
-        "orden registrada",
-        "procesará tu orden",
-        "gracias por comprar",
-        "¡excelente!",
-        "perfecto, hemos registrado",
-        "hemos registrado tu orden",
-        "tu orden quedó lista",
-        "orden lista",
-        "pedido confirmado",
-        "pedido registrado",
-        "te confirmo",
-        "orden confirmada",
-        "compra confirmada",
-    ]
+        # Verifica que el agente haya confirmado la orden
+        confirm_keywords = [
+            "registré tu orden",
+            "registrar tu orden",
+            "orden registrada",
+            "hemos registrado",
+            "quedó registrada",
+            "tu orden quedó lista",
+            "orden lista",
+            "pedido confirmado",
+            "pedido registrado",
+            "confirmo tu orden",
+            "orden confirmada",
+            "compra confirmada",
+            "gracias por tu compra",
+            "dejamos tu orden",
+        ]
+        
+        response_lower = agent_response.lower()
+        found_confirmation = any(kw in response_lower for kw in confirm_keywords)
+        
+        if found_confirmation:
+            print(f"  └─ Agente confirmo la orden (contiene 'registr' o similar)")
+        else:
+            print(f"  └─ Agente NO confirmo explicitamente la orden")
+            # Aun asi, si tiene todos los datos y el cliente confirmo, crear
+            if not purchase_context.is_confirmed:
+                print(f"  └─ Cliente tampoco confirmo, cancelando creacion")
+                return None
     
-    response_lower = agent_response.lower()
-    if not found_keyword:
-        for kw in confirm_keywords:
-            if kw in response_lower:
-                found_keyword = True
-                print(f"  └─ Palabra clave de confirmación encontrada: '{kw}'")
-                break
-    
-    if not found_keyword:
-        print(f"  └─ No se encontró palabra clave de confirmación en: {agent_response[:100]}")
-        return None
-    
-    # Si hay items, úsalos. Si no, crea un item genérico con el resumen de la conversación
+    # Preparar items
     items_data = []
     
     if purchase_context.items and len(purchase_context.items) > 0:
-        items_data = [
-            {
+        for item in purchase_context.items:
+            item_dict = {
                 "product_id": item.product_id,
                 "product_name": item.product_name,
                 "quantity": item.quantity,
                 "unit_price": item.unit_price,
             }
-            for item in purchase_context.items
-        ]
+            items_data.append(item_dict)
     else:
-        # Crea un item genérico con resumen de la orden
-        summary_text = "Compra realizada desde chat del agente"
-        total = purchase_context.total_amount or 0.0
-        
-        items_data = [
-            {
-                "product_id": "chat_order",
-                "product_name": f"Compra en línea - {summary_text}",
-                "quantity": 1,
-                "unit_price": total if total > 0 else 0,
-            }
-        ]
+        print(f"  └─ No hay items, creando generico")
+        return None
     
-    # Crea la orden
+    # Crear la orden
     try:
+        try:
+            print(f"  └─ Creando orden:")
+            print(f"     • Cliente: {purchase_context.customer_name}")
+            print(f"     • Telefono: {purchase_context.customer_phone}")
+            print(f"     • Direccion: {purchase_context.customer_address or '(sin especificar)'}")
+            print(f"     • Items: {len(items_data)}")
+        except:
+            pass  # Ignorar errores de encoding en prints
+        
         order = create_order_from_chat(
             db=db,
             vendor=vendor,
@@ -377,13 +486,19 @@ def _create_order_from_response(
             customer_phone=purchase_context.customer_phone,
             customer_address=purchase_context.customer_address or "",
             items=items_data,
-            conversation_summary="Creada desde chat del agente"
+            conversation_summary="Orden creada desde chat del agente"
         )
         
-        print(f"  └─ ✅ Orden creada exitosamente, ID: {order.get('id')}")
+        try:
+            print(f"  └─ [OK] Orden creada exitosamente, ID: {order.get('id')}")
+        except:
+            pass
         return order
     except Exception as e:
-        print(f"  └─ ❌ Error al crear orden: {str(e)}")
+        try:
+            print(f"  └─ [ERROR] Error al crear orden: {str(e)}")
+        except:
+            pass
         import traceback
         traceback.print_exc()
         return None
@@ -420,6 +535,24 @@ def generate_agent_reply(
     if not agent_enabled:
         raise HTTPException(status_code=403, detail="El agente de esta empresa está desactivado.")
 
+    # === ACTUALIZAR PURCHASE_CONTEXT CON DATOS DEL MENSAJE ===
+    if not purchase_context:
+        purchase_context = {}
+    
+    try:
+        purchase_context = update_purchase_context_from_message(
+            purchase_context=purchase_context,
+            user_message=user_message,
+            conversation_history=conversation_history
+        )
+    except Exception as e:
+        try:
+            print(f"WARNING: Error al actualizar purchase_context: {str(e)}")
+        except:
+            pass
+        import traceback
+        traceback.print_exc()
+
     if _is_simple_greeting(user_message):
         return {
             "vendor_name": vendor.name,
@@ -427,16 +560,22 @@ def generate_agent_reply(
             "agent_response": _build_welcome_reply(vendor.name),
             "context_used": "Saludo inicial. No se utilizó contexto del catálogo.",
             "matches_found": 0,
+            "purchase_context": purchase_context,
         }
 
     name, gender = _extract_identity(user_message)
     if name or gender:
+        # Actualizar el contexto con nombre si se encuentra
+        if name and not purchase_context.get("customer_name"):
+            purchase_context["customer_name"] = name
+        
         return {
             "vendor_name": vendor.name,
             "user_message": user_message,
             "agent_response": _build_identity_reply(vendor.name, name, gender),
             "context_used": "Datos de trato del cliente. No se utilizó contexto del catálogo.",
             "matches_found": 0,
+            "purchase_context": purchase_context,
         }
 
     if _is_general_social_message(user_message):
@@ -446,6 +585,7 @@ def generate_agent_reply(
             "agent_response": _build_general_reply(vendor.name, user_message),
             "context_used": "Conversación general. No se utilizó contexto del catálogo.",
             "matches_found": 0,
+            "purchase_context": purchase_context,
         }
 
     if not is_within_business_hours(business_start_hour, business_end_hour):
@@ -455,6 +595,7 @@ def generate_agent_reply(
             "agent_response": off_hours_message,
             "context_used": "Fuera de horario. No se utilizó contexto del catálogo.",
             "matches_found": 0,
+            "purchase_context": purchase_context,
         }
 
     # Mejora la query si hay historial para mejor contexto
@@ -475,14 +616,16 @@ def generate_agent_reply(
                 "agent_response": _build_general_reply(vendor.name, user_message),
                 "context_used": "Conversación general. No se utilizó contexto del catálogo.",
                 "matches_found": 0,
+                "purchase_context": purchase_context,
             }
 
         return {
             "vendor_name": vendor.name,
             "user_message": user_message,
-            "agent_response": NO_KNOWLEDGE_REPLY,
+            "agent_response": _build_out_of_catalog_reply(user_message, vendor.name),
             "context_used": "No se encontraron datos relevantes en la base de conocimiento.",
             "matches_found": 0,
+            "purchase_context": purchase_context,
         }
 
     context_block = build_context_block(results)
@@ -522,35 +665,103 @@ def generate_agent_reply(
     )
     agent_reply = _strip_repeated_intro(agent_reply)
 
+    # === EXTRAER Y ACTUALIZAR PRODUCTO DESDE LA CONVERSACIÓN ===
+    try:
+        # Si el cliente está confirmando o especificando un producto
+        if is_customer_confirming_product(user_message) or is_customer_selecting_variant(user_message, agent_reply):
+            # Extraer el producto del último mensaje del agente (contexto de la recomendación)
+            last_agent_msg = ""
+            if conversation_history:
+                for msg in reversed(conversation_history[-2:]):
+                    if msg.get("role") == "assistant":
+                        last_agent_msg = msg.get("content", "")
+                        break
+            
+            # Si no hay historial, usar el contexto del catálogo
+            if not last_agent_msg:
+                last_agent_msg = context_block
+            
+            # Extraer producto
+            product = extract_product_from_catalog_context(
+                user_message=user_message,
+                agent_last_response=last_agent_msg,
+                conversation_history=conversation_history
+            )
+            
+            if product and product.get("product_name"):
+                try:
+                    print(f"[PRODUCTO] Detectado: {build_product_summary(product)}")
+                except:
+                    pass
+                
+                # Actualizar items en purchase_context
+                if not purchase_context.get("items"):
+                    purchase_context["items"] = []
+            
+            # Si es una actualización de cantidad/variante del mismo producto
+            existing_item = None
+            if product and len(purchase_context["items"]) > 0:
+                last_item = purchase_context["items"][-1]
+                # Si el nombre es muy similar, actualizar en lugar de crear nuevo
+                if last_item.get("product_name", "").lower() in product.get("product_name", "").lower():
+                    existing_item = last_item
+            
+            if existing_item and product:
+                # Actualizar variantes
+                existing_item["variants"] = {**existing_item.get("variants", {}), **product.get("variants", {})}
+                try:
+                    print(f"   └─ Variantes actualizadas: {existing_item.get('variants')}")
+                except:
+                    pass
+            elif product:
+                # Crear nuevo item con product_id basado en nombre
+                new_item = {
+                    "product_id": re.sub(r"[^a-z0-9]", "_", product.get("product_name", "").lower()),
+                    "product_name": product.get("product_name"),
+                    "quantity": product.get("quantity", 1),
+                    "unit_price": product.get("unit_price", 0),
+                    "variants": product.get("variants", {}),
+                }
+                purchase_context["items"].append(new_item)
+                try:
+                    print(f"   └─ Producto agregado a carrito")
+                except:
+                    pass
+                
+                # Actualizar total
+                if purchase_context.get("items"):
+                    total = sum(item.get("quantity", 1) * item.get("unit_price", 0) 
+                               for item in purchase_context["items"])
+                    purchase_context["total_amount"] = total
+    except Exception as e:
+        print(f"[WARNING] Error al extraer producto: {str(e)}")
+        import traceback
+        traceback.print_exc()
+
     # Convertir purchase_context a objeto si viene como dict
     pc_obj = None
     if purchase_context:
-        if isinstance(purchase_context, dict):
-            try:
-                pc_obj = PurchaseContext(**purchase_context)
-            except Exception as e:
-                print(f"Error al convertir purchase_context: {e}")
-                pc_obj = None
-        else:
-            pc_obj = purchase_context
+        try:
+            pc_obj = PurchaseContext(**purchase_context)
+        except Exception as e:
+            print(f"Error al convertir purchase_context: {e}")
+            pc_obj = None
 
     # Crear orden si es apropiado
-    # IMPORTANTE: Crear orden si el AGENTE confirmó (no si el usuario pidió)
     order_created = None
     if pc_obj:
-        print(f"🔍 [ORDEN] Verificando creación de orden:")
-        print(f"   - purchase_context existe: ✓")
-        print(f"   - customer_name: {pc_obj.customer_name}")
-        print(f"   - customer_phone: {pc_obj.customer_phone}")
-        print(f"   - agent_reply contiene 'registr': {'registr' in agent_reply.lower()}")
+        print(f"[ORDEN] Verificando creación de orden:")
+        print(f"   - Datos del cliente: {get_client_data_summary(purchase_context)}")
+        print(f"   - Confirmado: {pc_obj.is_confirmed}")
+        print(f"   - Agent respuesta contiene confirmación: {'registr' in agent_reply.lower()}")
         
         # Intenta crear orden si el agente confirmó
         order_created = _create_order_from_response(db, vendor, agent_reply, pc_obj)
         
         if order_created:
-            print(f"✅ [ORDEN] Orden creada: {order_created}")
+            print(f"[OK] Orden creada: {order_created}")
         else:
-            print(f"❌ [ORDEN] No se pudo crear orden")
+            print(f"[ERROR] No se pudo crear orden")
 
     response = {
         "vendor_name": vendor.name,
@@ -566,5 +777,7 @@ def generate_agent_reply(
     # Retorna el contexto de compra actualizado
     if pc_obj:
         response["purchase_context"] = pc_obj.model_dump()
+    else:
+        response["purchase_context"] = purchase_context
     
     return response

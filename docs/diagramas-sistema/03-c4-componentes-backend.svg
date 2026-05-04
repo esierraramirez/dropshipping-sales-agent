@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3400" height="2000" viewBox="0 0 3400 2000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbfdff"/>
+      <stop offset="100%" stop-color="#f4fbf6"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 56px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 26px Arial, sans-serif; fill: #475569; }
+      .section { font: 700 34px Arial, sans-serif; fill: #0f172a; }
+      .label { font: 700 28px Arial, sans-serif; fill: #0f172a; }
+      .small { font: 400 22px Arial, sans-serif; fill: #334155; }
+      .tiny { font: 400 18px Arial, sans-serif; fill: #475569; }
+      .sys { fill: #ecfeff; stroke: #0f766e; stroke-width: 5; rx: 34; ry: 34; }
+      .group { fill: #ffffff; stroke: #2563eb; stroke-width: 4; rx: 30; ry: 30; }
+      .data { fill: #fff7ed; stroke: #ea580c; stroke-width: 4; rx: 30; ry: 30; }
+      .ext { fill: #fdf2f8; stroke: #db2777; stroke-width: 4; rx: 30; ry: 30; }
+      .line { stroke: #334155; stroke-width: 5; fill: none; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 16 12; }
+    </style>
+    <marker id="arrow" markerWidth="16" markerHeight="16" refX="13" refY="8" orient="auto">
+      <path d="M0,0 L16,8 L0,16 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <rect width="3400" height="2000" fill="url(#bg)"/>
+  <text x="100" y="110" class="title">C4 - Componentes del Backend</text>
+  <text x="100" y="160" class="subtitle">Desglose interno de FastAPI en routers, servicios, infraestructura, modelos y persistencia</text>
+
+  <rect x="90" y="260" width="3220" height="1600" class="sys"/>
+  <text x="1700" y="330" text-anchor="middle" class="section">Backend FastAPI</text>
+
+  <rect x="150" y="500" width="600" height="280" class="group"/>
+  <text x="450" y="560" text-anchor="middle" class="label">API Routers</text>
+  <text x="450" y="605" text-anchor="middle" class="small">auth_routes, empresa_routes, catalog_routes</text>
+  <text x="450" y="645" text-anchor="middle" class="small">order_routes, settings_routes, chat_routes</text>
+  <text x="450" y="685" text-anchor="middle" class="small">retrieval_routes, whatsapp_routes, audit_routes</text>
+  <text x="450" y="725" text-anchor="middle" class="small">dashboard_routes, llm_routes, vendor_routes</text>
+
+  <rect x="840" y="500" width="700" height="280" class="group"/>
+  <text x="1190" y="560" text-anchor="middle" class="label">Servicios de Negocio</text>
+  <text x="1190" y="605" text-anchor="middle" class="small">auth_service, catalog_service, order_service</text>
+  <text x="1190" y="645" text-anchor="middle" class="small">chat_service, retrieval_service, settings_service</text>
+  <text x="1190" y="685" text-anchor="middle" class="small">audit_service, whatsapp_service, dashboard_service</text>
+  <text x="1190" y="725" text-anchor="middle" class="small">reglas, validaciones, excepciones y orquestacion</text>
+
+  <rect x="1620" y="500" width="650" height="280" class="group"/>
+  <text x="1945" y="560" text-anchor="middle" class="label">Infraestructura</text>
+  <text x="1945" y="605" text-anchor="middle" class="small">db/session.py, csv_audit.py, excel/*</text>
+  <text x="1945" y="645" text-anchor="middle" class="small">llm/openai_adapter.py, rag/*</text>
+  <text x="1945" y="685" text-anchor="middle" class="small">persistencia, parsing, indexado, LLM</text>
+  <text x="1945" y="725" text-anchor="middle" class="small">trazabilidad y exportacion CSV</text>
+
+  <rect x="2350" y="500" width="860" height="280" class="group"/>
+  <text x="2780" y="560" text-anchor="middle" class="label">Modelos ORM</text>
+  <text x="2780" y="605" text-anchor="middle" class="small">Vendor, Product, Order, VendorSettings</text>
+  <text x="2780" y="645" text-anchor="middle" class="small">WhatsAppConnection, AuditLog</text>
+  <text x="2780" y="685" text-anchor="middle" class="small">relaciones bidireccionales y cascadas</text>
+  <text x="2780" y="725" text-anchor="middle" class="small">soft delete, timestamps, estado, auditoria</text>
+
+  <rect x="150" y="920" width="640" height="260" class="data"/>
+  <text x="470" y="980" text-anchor="middle" class="label">PostgreSQL / Supabase</text>
+  <text x="470" y="1030" text-anchor="middle" class="small">vendors, products, orders, settings</text>
+  <text x="470" y="1070" text-anchor="middle" class="small">whatsapp_connections, audit_logs</text>
+  <text x="470" y="1110" text-anchor="middle" class="small">persistencia transaccional</text>
+
+  <rect x="880" y="920" width="640" height="260" class="data"/>
+  <text x="1200" y="980" text-anchor="middle" class="label">Carpetas de Datos</text>
+  <text x="1200" y="1030" text-anchor="middle" class="small">data/raw, data/processed, data/index</text>
+  <text x="1200" y="1070" text-anchor="middle" class="small">CSV de auditoria CRUD y reportes</text>
+  <text x="1200" y="1110" text-anchor="middle" class="small">catalogo, calidad y conocimiento</text>
+
+  <rect x="1580" y="920" width="500" height="260" class="ext"/>
+  <text x="1830" y="980" text-anchor="middle" class="label">OpenAI</text>
+  <text x="1830" y="1030" text-anchor="middle" class="small">LLM para respuestas</text>
+  <text x="1830" y="1070" text-anchor="middle" class="small">generacion de contexto</text>
+  <text x="1830" y="1110" text-anchor="middle" class="small">chat y automatizacion</text>
+
+  <rect x="2200" y="920" width="500" height="260" class="ext"/>
+  <text x="2450" y="980" text-anchor="middle" class="label">WhatsApp Cloud API</text>
+  <text x="2450" y="1030" text-anchor="middle" class="small">Webhook, verificacion y envio</text>
+  <text x="2450" y="1070" text-anchor="middle" class="small">interaccion externa con clientes</text>
+  <text x="2450" y="1110" text-anchor="middle" class="small">canal activo de comunicacion</text>
+
+  <line x1="750" y1="640" x2="840" y2="640" class="line"/>
+  <line x1="1540" y1="640" x2="1620" y2="640" class="line"/>
+  <line x1="2270" y1="640" x2="2350" y2="640" class="line"/>
+  <line x1="1945" y1="780" x2="1200" y2="920" class="line dash"/>
+  <line x1="1945" y1="780" x2="1830" y2="920" class="line dash"/>
+  <line x1="2780" y1="780" x2="2450" y2="920" class="line dash"/>
+  <line x1="1190" y1="780" x2="470" y2="920" class="line dash"/>
+
+  <text x="1700" y="1400" text-anchor="middle" class="tiny">El backend separa presentacion, reglas de negocio, infraestructura y modelos para mantener el sistema escalable y mantenible.</text>
+</svg>

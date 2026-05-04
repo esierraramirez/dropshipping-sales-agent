@@ -42,5 +42,9 @@ class Settings(BaseModel):
     CRUD_AUDIT_ENABLED: bool = os.getenv("CRUD_AUDIT_ENABLED", "true").lower() == "true"
     CRUD_AUDIT_CSV_PATH: str = os.getenv("CRUD_AUDIT_CSV_PATH", "data/audit/crud_operations.csv")
 
+    # CSV audit for HTTP requests/endpoints
+    ENDPOINT_AUDIT_ENABLED: bool = os.getenv("ENDPOINT_AUDIT_ENABLED", "true").lower() == "true"
+    ENDPOINT_AUDIT_CSV_PATH: str = os.getenv("ENDPOINT_AUDIT_CSV_PATH", "data/audit/endpoint_requests.csv")
+
 
 settings = Settings()

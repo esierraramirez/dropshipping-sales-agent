@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.router import api_router
 from app.infrastructure.db.session import Base, engine
+from app.infrastructure.http.endpoint_csv_audit import endpoint_csv_audit_middleware
 
 # Importar modelos para que SQLAlchemy cree las tablas
 from app.models.vendor import Vendor
@@ -22,6 +23,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.middleware("http")(endpoint_csv_audit_middleware)
 
 app.include_router(api_router)
 

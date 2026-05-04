@@ -51,7 +51,9 @@ def retrieve_vendor_context(vendor: Vendor, query: str, top_k: int = 3) -> dict:
         top_k=top_k,
     )
 
-    if not results and _is_broad_catalog_query(query):
+    # Si no hay resultados, siempre intenta cargar el preview del catálogo
+    # porque es mejor mostrar algo que "no tengo información"
+    if not results:
         results = _load_catalog_preview(kb_path=kb_path, top_k=top_k)
 
     if results:
@@ -70,6 +72,51 @@ def retrieve_vendor_context(vendor: Vendor, query: str, top_k: int = 3) -> dict:
 def _is_broad_catalog_query(query: str) -> bool:
     query_normalized = _normalize_text(query)
     return any(phrase in query_normalized for phrase in BROAD_CATALOG_PHRASES)
+
+
+def _contains_product_keywords(query: str) -> bool:
+    """Detecta si la query menciona nombres de categorías de productos comunes"""
+    product_keywords = {
+        "camisa",
+        "camisas",
+        "jean",
+        "jeans",
+        "pantalon",
+        "pantalones",
+        "vestido",
+        "vestidos",
+        "falda",
+        "faldas",
+        "blusa",
+        "blusas",
+        "playera",
+        "playeras",
+        "suéter",
+        "suéter",
+        "abrigo",
+        "abrigos",
+        "chaqueta",
+        "chaquetas",
+        "zapato",
+        "zapatos",
+        "tenis",
+        "camisa",
+        "ropa",
+        "prenda",
+        "prendas",
+        "outfit",
+        "traje",
+        "trajes",
+        "sweater",
+        "hoodie",
+        "chaquetilla",
+        "corbata",
+        "interesado",
+        "interesada",
+    }
+    query_normalized = _normalize_text(query)
+    query_words = set(query_normalized.split())
+    return bool(query_words & product_keywords)
 
 
 def _normalize_text(text: str) -> str:
