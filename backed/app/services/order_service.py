@@ -168,6 +168,18 @@ def create_order_from_chat(
             "unit_price": item.get("unit_price", 0)
         })
 
+    items_summary = ", ".join(
+        f"{item.get('quantity', 1)}x {item.get('product_name', '')}".strip()
+        for item in normalized_items
+        if item.get("product_name")
+    )
+    order_summary = (
+        f"Orden de {customer_name} | Telefono: {customer_phone} | "
+        f"Direccion: {customer_address or '(sin especificar)'} | "
+        f"Productos: {items_summary or 'Sin productos'} | Total: {total_amount:.2f}"
+    )
+    conversation_note = conversation_summary or "Orden creada desde conversacion de chat del agente"
+
     order = Order(
         vendor_id=vendor.id,
         customer_name=customer_name,
@@ -176,8 +188,8 @@ def create_order_from_chat(
         items_json=json.dumps(normalized_items, ensure_ascii=False),
         total_amount=total_amount,
         status="en_proceso",
-        chat_summary=conversation_summary,
-        conversation_notes="Orden creada desde conversación de chat del agente"
+        chat_summary=order_summary,
+        conversation_notes=conversation_note
     )
 
     db.add(order)

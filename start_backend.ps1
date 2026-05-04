@@ -10,7 +10,7 @@ foreach ($listener in $listeners) {
     if ($pidToStop -and $pidToStop -ne $PID) {
         $process = Get-Process -Id $pidToStop -ErrorAction SilentlyContinue
         if ($process) {
-            Write-Host "Deteniendo proceso en puerto $port (PID $pidToStop: $($process.ProcessName))..."
+            Write-Host "Deteniendo proceso en puerto $port (PID ${pidToStop}: $($process.ProcessName))..."
             Stop-Process -Id $pidToStop -Force
         }
     }

@@ -88,6 +88,21 @@ def _is_simple_greeting(text: str) -> bool:
         "saludos",
     }
     words = normalized.split()
+    
+    # Si está vacío, no es saludo
+    if not words:
+        return False
+    
+    # Si la PRIMERA palabra es un saludo, considéralo como saludo simple
+    # Ignora ruido adicional como "(var1)" que deja "var" o "varX"
+    first_word = words[0]
+    
+    # Verifica si la primera palabra es un saludo o si TODAS las palabras son saludos
+    # (para casos como "hola buenas" o "buenos dias")
+    if first_word in greeting_words:
+        return True
+    
+    # O si todas las palabras son saludos válidos
     return bool(words) and all(word in greeting_words for word in words)
 
 
@@ -313,7 +328,16 @@ def _is_general_social_message(text: str) -> bool:
         "vale",
         "bueno",
     }
-    return normalized in social_phrases
+    # Verificar si es exactamente una frase social
+    if normalized in social_phrases:
+        return True
+    
+    # O si la primera palabra es una frase social comun (para ignorar ruido como "(var1)")
+    words = normalized.split()
+    if words and words[0] in social_phrases:
+        return True
+    
+    return False
 
 
 def _build_welcome_reply(vendor_name: str) -> str:
@@ -578,7 +602,8 @@ def generate_agent_reply(
             "purchase_context": purchase_context,
         }
 
-    if _is_general_social_message(user_message):
+    confirmation_intent = extract_confirmation_intent(user_message)
+    if _is_general_social_message(user_message) and not confirmation_intent:
         return {
             "vendor_name": vendor.name,
             "user_message": user_message,
